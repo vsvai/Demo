@@ -187,6 +187,10 @@
       font-size: clamp(0.72rem, 2.5vw, 0.8rem);
       line-height: 1.5;
       -webkit-overflow-scrolling: touch;
+      
+      /* ADD THESE TWO LINES TO PUT NEWEST ON TOP */
+      display: flex;
+      flex-direction: column-reverse;
     }
     .log-line {
       padding: 0.25rem 0;
@@ -301,6 +305,45 @@
     .control-feedback.success { background: rgba(45, 164, 78, 0.15); color: var(--accent-dim); }
     .control-feedback.error { background: rgba(207, 34, 46, 0.1); color: var(--error); }
 
+    .control-feedback.error { background: rgba(207, 34, 46, 0.1); color: var(--error); }
+
+.stats-dashboard {
+  display: none; /* Hidden until a robot is selected */
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.stats-dashboard {
+  display: grid; /* Changed from 'none' to 'grid' so it is always visible */
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.stat-banner {
+  background: var(--panel);
+  height: 5rem;
+  padding: 2rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.65rem;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.stat-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 0.25rem;
+  color: var(--accent-dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+
     @media (max-width: 768px) {
       main { flex-direction: column; }
       aside {
@@ -326,6 +369,12 @@
 <body>
   <header>
     <h1>Robot Dashboard</h1>
+    <select id="domain-selector" onchange="changeDomain(this.value)" style="padding: 4px; border-radius: 4px;">
+      <!-- Add your list here -->
+      <option value="https://server2.sudoyantra.com">Server 2 (Default)</option>
+      <option value="hpcl-robot-a4f00f72f340">HPCL Robot (a4f00f72f340)</option>
+      <option value="carbantis">Carbantis</option>
+    </select>
     <div class="refresh-info">Refresh: <span id="countdown">--</span>s</div>
   </header>
   <main>
@@ -345,17 +394,19 @@
       <div id="api-status" class="api-status"></div>
     </aside>
     <section class="section">
+
+      
       <div class="section-header">Logs — <span id="selected-device-label">Select a robot or Wi‑Fi device</span></div>
       <div id="control-bar" class="control-bar">
-        <input type="number" id="move-duration-ms" min="1" step="100" value="1500" inputmode="numeric" title="Forward / backward duration (ms)" />
+        <!-- <input type="number" id="move-duration-ms" min="1" step="100" value="1500" inputmode="numeric" title="Forward / backward duration (ms)" />
         <button type="button" id="btn-move-forward" class="btn-move">Forward</button>
         <button type="button" id="btn-move-backward" class="btn-move">Backward</button>
-        <input type="number" id="move-lr-duration-ms" min="100" max="1000" step="10" value="500" inputmode="numeric" title="Left / right move: 100–1000 ms" />
-        <button type="button" id="btn-move-left" class="btn-move" title="/move/{MAC}/left/{ms}">Move left</button>
-        <button type="button" id="btn-move-right" class="btn-move" title="/move/{MAC}/right/{ms}">Move right</button>
+        <input type="number" id="move-lr-duration-ms" min="100" max="1000" step="10" value="500" inputmode="numeric" title="Left / right move: 100–1000 ms" /> -->
+        <!-- <button type="button" id="btn-move-left" class="btn-move" title="/move/{MAC}/left/{ms}">Move left</button>
+        <button type="button" id="btn-move-right" class="btn-move" title="/move/{MAC}/right/{ms}">Move right</button> -->
         <button type="button" id="btn-stop" class="btn-stop">Stop</button>
-        <button type="button" id="btn-run-left" class="btn-left">← Left</button>
-        <button type="button" id="btn-run-right" class="btn-right">Right →</button>
+        <button type="button" id="btn-run-left" class="btn-left">← Go Left</button>
+        <button type="button" id="btn-run-right" class="btn-right">Go Right →</button>
         <button type="button" id="btn-ota" class="btn-ota">OTA</button>
         <span id="control-feedback" class="control-feedback" style="display:none" aria-live="polite"></span>
       </div>
@@ -366,6 +417,31 @@
         <button type="button" id="btn-wifi-start-wifi" class="btn-wifi-cam" title="GET /wifi_api/wifi/{mac}/set/{sec}">Start Wi‑Fi + camera</button>
         <span id="wifi-control-feedback" class="control-feedback" style="display:none" aria-live="polite"></span>
       </div>
+
+      <div class="wifi-control-bar control-bar" id="wifi-control-bar">
+        <!-- your existing wifi buttons -->
+        <span id="wifi-control-feedback" class="control-feedback" style="display:none" aria-live="polite"></span>
+      </div>
+
+      <!-- NEW BANNERS -->
+      <div id="stats-dashboard" class="stats-dashboard">
+        <div class="stat-banner">
+          <div class="stat-label">Total Runs</div>
+          <div class="stat-value" id="stat-total-runs">0</div>
+        </div>
+        <div class="stat-banner">
+          <div class="stat-label">Last Run Cmd</div>
+          <div class="stat-value" id="stat-last-run">--</div>
+        </div>
+        <div class="stat-banner">
+          <div class="stat-label">Battery (ADS)</div>
+          <div class="stat-value" id="stat-battery">--</div>
+        </div>
+        <div class="stat-banner">
+          <div class="stat-label">Version</div>
+          <div class="stat-value" id="stat-version">--</div>
+        </div>
+      </div>
       <div class="logs-panel">
         <div class="logs-title">Logs</div>
         <div class="logs-content" id="logs-content"></div>
@@ -373,13 +449,107 @@
     </section>
   </main>
   <script>
-    const REMOTE_API = 'https://server2.sudoyantra.com';
-    // Same-origin /api proxy (server.js) avoids CORS; /wifi_view/* is often blocked when /macs is not.
-    const USE_LOCAL_PROXY = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') && String(location.port || '') === '3000';
+      let filterSelection = localStorage.getItem('selected_domain') || 'https://server2.sudoyantra.com';
+    let REMOTE_API = 'https://server2.sudoyantra.com'; // Default backend
+    let robotFilterMacs = [];
+    let queryParams = '';
+
+        // Define your robots and their friendly names here
+        const hpclRobots = {
+      'a4f00f72f340': 'HPREG Robot 1',
+      'b0cbd8c5fdc4': 'HPREG Robot 2'
+    };
+
+    if (filterSelection === 'hpcl-robot-a4f00f72f340') {
+           // Just put your two MAC addresses here
+           robotFilterMacs = ['a4f00f72f340', 'b0cbd8c5fdc4'];
+     
+      queryParams = '?HPREG=1';
+    }else if (filterSelection === 'carbantis') {
+      robotFilterMacs = ['ECE334197698'];
+      queryParams = '?CARBANTIS=1';
+    }
+     else {
+      REMOTE_API = filterSelection;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const selector = document.getElementById('domain-selector');
+      if (selector) selector.value = filterSelection;
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const selector = document.getElementById('domain-selector');
+      if (selector) selector.value = filterSelection;
+      
+      // Change dashboard name if HPCL is selected
+      if (filterSelection === 'hpcl-robot-a4f00f72f340') {
+        const titleEl = document.querySelector('header h1');
+        if (titleEl) titleEl.textContent = 'HPREG Delhi';
+      }
+
+      const robotList = document.getElementById('robot-list');
+      if (robotList) {
+        observer.observe(robotList, { childList: true, subtree: true });
+      }
+    });
+
+
+    window.changeDomain = function(val) {
+      localStorage.setItem('selected_domain', val);
+      window.location.reload();
+    };
+
     const _origin = location.origin.replace(/\/$/, '');
+
+    // Same-origin /api proxy (server.js) avoids CORS; /wifi_view/* is often blocked when /macs is not.
+    const USE_LOCAL_PROXY = false;
+
     const API_BASE = USE_LOCAL_PROXY ? _origin + '/api' : REMOTE_API;
     const API_BASE_CONTROL = (REMOTE_API + '/udp').replace(/\/$/, '');
     const API_BASE_WIFI_API =(REMOTE_API + '/wifi_api').replace(/\/$/, '');
+
+       // Automatically apply the client-side filter whenever the list changes
+       const observer = new MutationObserver(() => {
+      if (robotFilterMacs.length === 0) return;
+      
+      const items = document.querySelectorAll('#robot-list .robot-item');
+      items.forEach(item => {
+        const textElement = item.querySelector('.robot-mac') || item;
+        const textToMatch = textElement.textContent.toLowerCase();
+        
+        let foundIndex = -1;
+        for (let i = 0; i < robotFilterMacs.length; i++) {
+          if (textToMatch.includes(robotFilterMacs[i].toLowerCase())) {
+            foundIndex = i;
+            break;
+          }
+        }
+        
+        if (foundIndex !== -1) {
+          item.style.display = 'flex';
+          // textElement.textContent = `Robot ${foundIndex + 1}`; // Rename to Robot 1, Robot 2...
+        } else {
+          item.style.display = 'none'; // Hide others
+        }
+      });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const selector = document.getElementById('domain-selector');
+      if (selector) selector.value = filterSelection;
+
+      if (filterSelection === 'hpcl-robot-a4f00f72f340') {
+        const titleEl = document.querySelector('header h1');
+        if (titleEl) titleEl.textContent = 'HPREG Setup';
+      }
+
+      const robotList = document.getElementById('robot-list');
+      if (robotList) {
+        observer.observe(robotList, { childList: true, subtree: true });
+      }
+    });
+
     const REFRESH_INTERVAL_MS = 10000;
     const ONLINE_THRESHOLD_MS = 120000;
     const FETCH_TIMEOUT_MS = 15000;
@@ -931,6 +1101,191 @@
       setupControlButtons();
       startRefresh();
     });
+
+
+    let lastDataTimestamp = null;
+    let dataTimerInterval = null;
+
+    let totalRuns = 0;
+
+// Call this whenever you select a robot to show the dashboard
+// ...existing code...
+    // Call this whenever you select a robot to show the dashboard
+    function showStatsDashboard() {
+      document.getElementById('stats-dashboard').classList.add('active');
+    }
+
+    // Auto-watch the logs container to update the dashboard and limit to 30
+    document.addEventListener('DOMContentLoaded', () => {
+      showStatsDashboard();
+
+      const logsContainer = document.getElementById('logs-content');
+      if (logsContainer) {
+        const logObserver = new MutationObserver((mutations) => {
+          mutations.forEach(mutation => {
+            
+            // DETECT CLEARING: If logs are emptied (robot switched), reset dashboard
+            if (mutation.removedNodes.length > 0 && logsContainer.children.length === 0) {
+              document.getElementById('stat-total-runs').textContent = '0';
+              document.getElementById('stat-last-run').textContent = 'None';
+              document.getElementById('stat-battery').textContent = '--';
+              document.getElementById('stat-version').textContent = '--';
+              return;
+            }
+
+            // DETECT NEW LOGS
+            if (mutation.addedNodes.length > 0) {
+              
+              // 1. Remove oldest nodes if there are more than 30 lines
+              while (logsContainer.children.length > 30) {
+                 if (logsContainer.firstChild) logsContainer.removeChild(logsContainer.firstChild); 
+              }
+
+              // 2. Recalculate ALL stats based strictly on what is currently in the log container
+              let currentRuns = 0;
+              let lastRunTime = 'None';
+              let lastBat = '--';
+              let lastVer = '--';
+
+              // Loop through visible logs (oldest to newest, so newest overwrites the variables)
+              Array.from(logsContainer.children).forEach(child => {
+                const text = child.textContent || '';
+                
+                if (text.toLowerCase().includes('running_')) {
+                  currentRuns++;
+                  // Try to find IST time, fallback to any HH:MM:SS format
+                  const timeMatchIST = text.match(/(\d{2}:\d{2}:\d{2})\s+IST/i);
+                  const timeMatchAny = text.match(/(\d{2}:\d{2}:\d{2})/);
+                  if (timeMatchIST) {
+                    lastRunTime = timeMatchIST[1];
+                  } else if (timeMatchAny) {
+                    lastRunTime = timeMatchAny[1];
+                  }
+                }
+
+                const adsMatch = text.match(/ADS value:\s*([\d.]+)/i);
+                if (adsMatch) lastBat = adsMatch[1] + 'V';
+
+                const verMatch = text.match(/Ver:\s*(\d+)/i);
+                if (verMatch) lastVer = 'v' + verMatch[1];
+              });
+              
+              // 3. Update HTML Dashboard
+              document.getElementById('stat-total-runs').textContent = currentRuns.toString();
+              document.getElementById('stat-last-run').textContent = lastRunTime;
+              document.getElementById('stat-battery').textContent = lastBat;
+              document.getElementById('stat-version').textContent = lastVer;
+            }
+          });
+        });
+        
+        logObserver.observe(logsContainer, { childList: true });
+      }
+    });
+
+// ...existing code...
+
+    // Pass your raw log string to this function every time a new log arrives
+    
+    // Pass your raw log string to this function every time a new log arrives
+    function extractStatsFromLog(logText, logTime = new Date()) {
+      if (!logText) return;
+
+      // 2. Check for action/run command
+      if (logText.toLowerCase().includes('running_')) {
+        // Try to extract the IST time from the text (e.g., "17:50:07 IST")
+        const timeMatch = logText.match(/(\d{2}:\d{2}:\d{2})\s+IST/i);
+        if (timeMatch) {
+          document.getElementById('stat-last-run').textContent = timeMatch[1];
+        } else {
+          // Fallback if IST is not found in string
+          const timeStr = logTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+          document.getElementById('stat-last-run').textContent = timeStr;
+        }
+      }
+      // 3 & 4. Extract Battery and Version
+      // Matches "ADS value: 23.43"
+      const adsMatch = logText.match(/ADS value:\s*([\d.]+)/i);
+      if (adsMatch) {
+        document.getElementById('stat-battery').textContent = adsMatch[1] + 'V';
+      }
+
+      // Matches "Ver: 101"
+      const verMatch = logText.match(/Ver:\s*(\d+)/i);
+      if (verMatch) {
+         document.getElementById('stat-version').textContent = 'v' + verMatch[1];
+      }
+    }
+
+
+    // Auto-watch the logs container to update the dashboard and limit to 10
+    document.addEventListener('DOMContentLoaded', () => {
+      // Start the "last data" timer immediately
+      showStatsDashboard();
+
+      const logsContainer = document.getElementById('logs-content');
+      if (logsContainer) {
+       // ...existing code...
+       const logObserver = new MutationObserver((mutations) => {
+          mutations.forEach(mutation => {
+            // DETECT CLEARING: If logs are emptied (robot switched), reset the dashboard
+            if (mutation.removedNodes.length > 0 && logsContainer.children.length === 0) {
+              const runsEl = document.getElementById('stat-total-runs');
+              if (runsEl) runsEl.textContent = '0';
+              document.getElementById('stat-last-run').textContent = 'None';
+              document.getElementById('stat-battery').textContent = '--';
+              document.getElementById('stat-version').textContent = '--';
+            }
+
+            // DETECT NEW LOGS
+            if (mutation.addedNodes.length > 0) {
+              mutation.addedNodes.forEach(node => {
+                 if (node.textContent) {
+                   extractStatsFromLog(node.textContent);
+                 }
+              });
+              
+              // Remove oldest nodes if there are more than 30 lines
+              // Since CSS column-reverse makes bottom oldest, remove from start of DOM
+              // while (logsContainer.children.length > 100) {
+              //    if (logsContainer.firstChild) logsContainer.removeChild(logsContainer.firstChild); 
+              // }
+
+              // Recount total runs accurately based on visible logs
+              let currentRuns = 0;
+              Array.from(logsContainer.children).forEach(child => {
+                if (child.textContent && child.textContent.toLowerCase().includes('running_')) {
+                  currentRuns++;
+                }
+              });
+              
+              const runsEl = document.getElementById('stat-total-runs');
+              if (runsEl) runsEl.textContent = currentRuns.toString();
+            }
+          });
+        });
+        
+        logObserver.observe(logsContainer, { childList: true });
+      }
+    });
+
+
+    // IMPORTANT: Update your log appending logic to put limits and reverse order. 
+    // Example wrapper for your existing log function:
+    function addLogToUI(htmlLogLine, rawTextForExtraction) {
+       const logsContainer = document.getElementById('logs-content');
+       
+       // Prepend to make newest on top
+       logsContainer.insertAdjacentHTML('afterbegin', htmlLogLine); 
+       
+       // Keep only top 10
+       while (logsContainer.children.length > 10) {
+         logsContainer.removeChild(logsContainer.lastChild);
+       }
+
+       // Parse for the dashboard
+       extractStatsFromLog(rawTextForExtraction);
+    }
   </script>
 </body>
 </html>
