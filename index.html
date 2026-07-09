@@ -408,7 +408,108 @@
         <button type="button" id="btn-run-left" class="btn-left">← Go Left</button>
         <button type="button" id="btn-run-right" class="btn-right">Go Right →</button>
         <button type="button" id="btn-ota" class="btn-ota">OTA</button>
+
+        <div id="keyboard-control" style="text-align: center; margin-top: 20px;">
+          <button id="btn-forward" class="btn-move">Forward (W)</button>
+          <button id="btn-left" class="btn-move">Left (A)</button>
+          <button id="btn-backward" class="btn-move">Backward (S)</button>
+          <button id="btn-right" class="btn-move">Right (D)</button>
+        </div>
         <span id="control-feedback" class="control-feedback" style="display:none" aria-live="polite"></span>
+        
+        <script>
+          // Map keyboard keys to button actions
+          document.addEventListener('DOMContentLoaded', () => {
+            const forwardButton = document.getElementById('btn-forward');
+            const leftButton = document.getElementById('btn-left');
+            const backwardButton = document.getElementById('btn-backward');
+            const rightButton = document.getElementById('btn-right');
+ 
+    // Function to disable buttons temporarily
+    function disableButtonTemporarily(button) {
+      button.disabled = true;
+      setTimeout(() => {
+        button.disabled = false;
+      }, 200); // 200ms delay
+    }            
+            document.addEventListener('keydown', (event) => {
+              switch (event.key.toLowerCase()) {
+                case 'w': // Forward
+                  forwardButton.click();
+
+                  break;
+                case 'a': // Left
+                  leftButton.click();
+
+                  break;
+                case 's': // Backward
+                  backwardButton.click();
+
+                  break;
+                case 'd': // Right
+                  rightButton.click();
+
+                  break;
+              }
+            });
+        
+            // Example: Add click event listeners to buttons
+            forwardButton.addEventListener('click', () => {
+              console.log('Forward command triggered');
+              triggerControl('/start/' + encodeURIComponent(selectedRobotMac) + '/set/forward');
+              disableButtonTemporarily(forwardButton);
+            });
+        
+            leftButton.addEventListener('click', () => {
+              console.log('Left command triggered');
+              triggerControl('/start/' + encodeURIComponent(selectedRobotMac) + '/set/left');
+              disableButtonTemporarily(leftButton);
+            });
+        
+            backwardButton.addEventListener('click', () => {
+              console.log('Backward command triggered');
+              triggerControl('/start/' + encodeURIComponent(selectedRobotMac) + '/set/backward');
+              disableButtonTemporarily(backwardButton);
+            });
+        
+            rightButton.addEventListener('click', () => {
+              console.log('Right command triggered');
+              triggerControl('/start/' + encodeURIComponent(selectedRobotMac) + '/set/right');
+              disableButtonTemporarily(rightButton);
+            });
+          });
+        
+          // Function to send API requests
+          function triggerControl(endpoint) {
+            if (!selectedRobotMac) {
+              console.error('No robot selected!');
+              return;
+            }
+        
+            const url = `https://server2.sudoyantra.com/udp${endpoint}`;
+            fetch(url)
+              .then(response => {
+                if (!response.ok) {
+                  throw new Error(`API call failed with status ${response.status}`);
+                }
+                return response.json();
+              })
+              .then(data => {
+                console.log('API response:', data);
+                const feedback = document.getElementById('control-feedback');
+                feedback.textContent = 'Command sent successfully!';
+                feedback.style.display = 'block';
+                setTimeout(() => (feedback.style.display = 'none'), 2000);
+              })
+              .catch(error => {
+                console.error('Error:', error);
+                const feedback = document.getElementById('control-feedback');
+                feedback.textContent = 'Failed to send command!';
+                feedback.style.display = 'block';
+                setTimeout(() => (feedback.style.display = 'none'), 2000);
+              });
+          }
+        </script>
       </div>
       <div id="wifi-control-bar" class="control-bar wifi-control-bar">
         <label class="wifi-timer-label" for="wifi-timer-sec">Timer (seconds)</label>
@@ -446,6 +547,22 @@
         <div class="logs-title">Logs</div>
         <div class="logs-content" id="logs-content"></div>
       </div>
+
+      <!-- Add this at the bottom of your page -->
+<div id="camera-feed" style="text-align: center; margin-top: 20px;">
+  <img id="camera-image" src="https://server2.sudoyantra.com/udp/camera/latest" alt="Camera Feed" style="max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 8px;" />
+</div>
+
+<script>
+  // Refresh the camera image every 1 second
+  document.addEventListener('DOMContentLoaded', () => {
+    const cameraImage = document.getElementById('camera-image');
+    setInterval(() => {
+      // Add a timestamp to the URL to prevent caching
+      cameraImage.src = `https://server2.sudoyantra.com/udp/camera/latest?timestamp=${new Date().getTime()}`;
+    }, 1000);
+  });
+</script>
     </section>
   </main>
   <script>
@@ -824,51 +941,6 @@
     }
 
     function setupControlButtons() {
-      const getMoveMs = () => {
-        const raw = document.getElementById('move-duration-ms')?.value || '1500';
-        const ms = parseInt(raw, 10);
-        return Number.isFinite(ms) && ms >= 1 ? ms : null;
-      };
-      document.getElementById('btn-move-forward')?.addEventListener('click', () => {
-        const ms = getMoveMs();
-        if (!ms) return showControlFeedback('Enter valid ms', true);
-        triggerControl('/start/' + encodeURIComponent(selectedRobotMac) + '/forward/');
-      });
-      document.getElementById('btn-move-backward')?.addEventListener('click', () => {
-        const ms = getMoveMs();
-        if (!ms) return showControlFeedback('Enter valid ms', true);
-        triggerControl('/start/' + encodeURIComponent(selectedRobotMac) + '/backward/');
-      });
-      const getLrMoveMs = () => {
-        const raw = document.getElementById('move-lr-duration-ms')?.value || '500';
-        const ms = parseInt(raw, 10);
-        if (!Number.isFinite(ms) || ms < 100 || ms > 1000) return null;
-        return ms;
-      };
-      document.getElementById('btn-move-left')?.addEventListener('click', () => {
-        const ms = getLrMoveMs();
-        if (ms == null) return showControlFeedback('Left/right: use 100–1000 ms', true);
-        triggerControl('/start/' + encodeURIComponent(selectedRobotMac) + '/left/');
-      });
-      document.getElementById('btn-move-right')?.addEventListener('click', () => {
-        const ms = getLrMoveMs();
-        if (ms == null) return showControlFeedback('Left/right: use 100–1000 ms', true);
-        triggerControl('/start/' + encodeURIComponent(selectedRobotMac) + '/right/');
-      });
-      document.getElementById('btn-stop')?.addEventListener('click', () => {
-        triggerControl('/stop/' + encodeURIComponent(selectedRobotMac) + '/set');
-      });
-      document.getElementById('btn-run-left')?.addEventListener('click', () => {
-        triggerControl('/start/' + encodeURIComponent(selectedRobotMac) + '/set/go_forward');
-      });
-      document.getElementById('btn-run-right')?.addEventListener('click', () => {
-        triggerControl('/start/' + encodeURIComponent(selectedRobotMac) + '/set/go_backward');
-      });
-      document.getElementById('btn-ota')?.addEventListener('click', () => {
-        triggerControl('/ota/' + encodeURIComponent(selectedRobotMac) + '/set');
-      });
-      document.getElementById('btn-wifi-start-camera')?.addEventListener('click', () => triggerWifiAction('camera'));
-      document.getElementById('btn-wifi-start-wifi')?.addEventListener('click', () => triggerWifiAction('wifi'));
     }
 
     function setRobotOnline(mac, online) {
@@ -1286,6 +1358,8 @@
        // Parse for the dashboard
        extractStatsFromLog(rawTextForExtraction);
     }
+
+    
   </script>
 </body>
 </html>
