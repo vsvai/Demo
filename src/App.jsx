@@ -163,7 +163,7 @@ export default function App() {
       const macs = await fetchRobotsList(apiBase)
       let unique = [...new Set(macs)]
       if (config.filterMacs.length > 0) {
-        unique = unique.filter((mac) => config.filterMacs.includes(mac))
+        unique = unique.filter((mac) => config.filterMacs.some((f) => f.toLowerCase() === mac.toLowerCase()))
       }
       setRobots(unique)
       setRobotStatus((prev) => {
