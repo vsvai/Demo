@@ -1,72 +1,64 @@
 # Simple Robot Dashboard
 
-A small web dashboard that shows the robot list and the latest 50 logs per robot. Online robots are indicated with a green dot.
+A React-based dashboard for monitoring and controlling IoT robots and Wi-Fi devices.
 
-## Endpoints used
+## Tech Stack
 
-- **Robot list:** `http://65.2.178.186:5174/macs`
-- **Latest / last 50 logs:** `http://65.2.178.186:5174/view/{robotId}`  
-  Example: `http://65.2.178.186:5174/view/2805A503DE4C`
+- **React 18** with functional components and hooks
+- **Vite** for fast builds and development
+- **GitHub Pages** for hosting (auto-deploy via GitHub Actions)
 
-The app runs a local server that proxies these requests to avoid CORS.
+## Run locally
 
-## Run
+```bash
+npm install
+npm run dev
+```
+
+Opens at **http://localhost:5173** with API proxy to `server2.sudoyantra.com`.
+
+## Build for production
+
+```bash
+npm run build
+npm run preview
+```
+
+## Deploy to GitHub Pages
+
+Push to `main` branch — GitHub Actions will auto-build and deploy.
+
+Or deploy manually:
+
+```bash
+npm run deploy
+```
+
+## Project Structure
+
+```
+src/
+├── main.jsx       # Entry point
+├── App.jsx        # All components and state
+├── App.css        # Styles
+└── api.js         # API helpers and log parsing
+```
+
+## Features
+
+- Robot and Wi-Fi device list with online/offline status
+- Real-time log viewing with GMT/IST time tags
+- Robot movement controls (WASD keyboard + buttons)
+- Wi-Fi camera controls
+- Stats dashboard (total runs, battery, version)
+- Auto-refresh every 10 seconds
+- Multiple backend support (Server 2, HPCL, Carbantis)
+- Responsive design
+
+## Old version
+
+The original vanilla JS version is preserved in `index.html` and `server.js`. To run it:
 
 ```bash
 node server.js
 ```
-
-Then open **http://localhost:3000**.
-
-- **Robots** (left): list from `/macs`; green dot = robot considered online (recent successful log fetch).
-- **Logs** (right): last 50 logs for the selected robot from `/view/{robotId}`.
-- Data auto-refreshes every 10 seconds.
-
-## Host on GitHub Pages
-
-GitHub Pages serves **static files only** (no Node.js). The dashboard is a single HTML file, so you can host it there. The page will call the robot API directly from the browser.
-
-### 1. Create a GitHub repo
-
-- On GitHub: **New repository** → name it e.g. `SimpleRobotDashboard` → Create.
-- Do **not** add a README (you already have one).
-
-### 2. Push this project
-
-```bash
-cd /path/to/SimpleRobotDashboard
-git init
-git add index.html README.md
-git commit -m "Robot dashboard"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/SimpleRobotDashboard.git
-git push -u origin main
-```
-
-(You can add `server.js` and `package.json` too if you want the repo to run locally; GitHub Pages will only use the static files.)
-
-### 3. Turn on GitHub Pages
-
-- In the repo: **Settings** → **Pages** (left sidebar).
-- Under **Build and deployment**:
-  - **Source:** Deploy from a branch
-  - **Branch:** `main` (or `master`) → **/ (root)** → Save.
-- After a minute or two, the site will be at:
-  - **https://YOUR_USERNAME.github.io/SimpleRobotDashboard/**
-
-### 4. CORS
-
-The dashboard runs in the browser on `https://...github.io/...` but fetches from `http://65.2.178.186:5174`. The browser will allow this only if the **robot API server** sends CORS headers, for example:
-
-- `Access-Control-Allow-Origin: *`  
-  or  
-- `Access-Control-Allow-Origin: https://YOUR_USERNAME.github.io`
-
-If the API does not send these headers, requests will be blocked and the dashboard will show errors. In that case you have two options:
-
-- **Option A:** Enable CORS on the server at `65.2.178.186:5174` (add the header above).
-- **Option B:** Keep using the Node proxy locally (`node server.js`) or host the proxy somewhere else (e.g. Railway, Render) and set `window.ROBOT_DASHBOARD_API` to that proxy URL.
-
-## Optional: open HTML only
-
-If you serve `index.html` from the same origin as the API (e.g. same host/port as `65.2.178.186:5174`), you can open the file and set `API_BASE = ''` so requests go to the same origin.
