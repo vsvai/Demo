@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/SimpleRobotDashboard/',
+  base: '/Basic_Robot_DashBoard_HUL/',
   server: {
     proxy: {
       '/api': {

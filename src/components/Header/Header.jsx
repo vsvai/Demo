@@ -9,7 +9,7 @@ export default function Header({ domain, onDomainChange, countdown, title, onExp
           className="px-2 py-1 text-sm border border-border rounded-md bg-white font-sans cursor-pointer"
         >
           <option value="https://server2.sudoyantra.com">Server 2 (Default)</option>
-          <option value="hpcl-robot-a4f00f72f340">HPCL Robot (a4f00f72f340)</option>
+          <option value="hpcl">HPCL Delhi </option>
           <option value="carbantis">Carbantis</option>
         </select>
         <button onClick={onExport} className="px-2 py-1 text-xs font-medium border border-border rounded-md bg-white hover:bg-gray-50 transition-colors" title="Export device names">
