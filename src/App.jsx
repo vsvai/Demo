@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   getDomainConfig,
   fetchRobotsList,
@@ -67,11 +67,14 @@ export default function App() {
   const countdownTimerRef = useRef(null)
   const feedbackTimerRef = useRef(null)
   const wifiFeedbackTimerRef = useRef(null)
+  const refreshRef = useRef(null)
+  const loadLogsRef = useRef(null)
+  const robotCmdRef = useRef(null)
 
-  const config = getDomainConfig(domain)
+  const config = useMemo(() => getDomainConfig(domain), [domain])
   const apiBase = config.apiBase
   const title = config.title
-  const stats = extractStatsFromLogs(logs)
+  const stats = useMemo(() => extractStatsFromLogs(logs), [logs])
 
   const getDeviceName = useCallback((mac, index, type) => {
     const custom = type === 'wifi' ? deviceNames.wifi[mac] : deviceNames.robots[mac]
@@ -222,30 +225,33 @@ export default function App() {
     setLoading(false)
   }, [apiBase])
 
+  refreshRef.current = refresh
+  loadLogsRef.current = loadLogs
+
   // Auto refresh
   useEffect(() => {
-    refresh()
+    refreshRef.current()
     setCountdown(REFRESH_MS / 1000)
-    refreshTimerRef.current = setInterval(() => { refresh(); setCountdown(REFRESH_MS / 1000) }, REFRESH_MS)
+    refreshTimerRef.current = setInterval(() => { refreshRef.current(); setCountdown(REFRESH_MS / 1000) }, REFRESH_MS)
     countdownTimerRef.current = setInterval(() => setCountdown((c) => Math.max(0, c - 1)), 1000)
     return () => { clearInterval(refreshTimerRef.current); clearInterval(countdownTimerRef.current) }
-  }, [refresh])
+  }, [])
 
   // Load logs on selection
   useEffect(() => {
-    if (selectedRobotMac) loadLogs(selectedRobotMac, 'robot')
-    else if (selectedWifiMac) loadLogs(selectedWifiMac, 'wifi')
-  }, [selectedRobotMac, selectedWifiMac, loadLogs])
+    if (selectedRobotMac) loadLogsRef.current(selectedRobotMac, 'robot')
+    else if (selectedWifiMac) loadLogsRef.current(selectedWifiMac, 'wifi')
+  }, [selectedRobotMac, selectedWifiMac])
 
   // Periodic log refresh
   useEffect(() => {
     if (!selectedRobotMac && !selectedWifiMac) return
     const id = setInterval(() => {
-      if (selectedRobotMac) loadLogs(selectedRobotMac, 'robot')
-      else if (selectedWifiMac) loadLogs(selectedWifiMac, 'wifi')
+      if (selectedRobotMac) loadLogsRef.current(selectedRobotMac, 'robot')
+      else if (selectedWifiMac) loadLogsRef.current(selectedWifiMac, 'wifi')
     }, REFRESH_MS)
     return () => clearInterval(id)
-  }, [selectedRobotMac, selectedWifiMac, loadLogs])
+  }, [selectedRobotMac, selectedWifiMac])
 
   // Camera refresh
   useEffect(() => {
@@ -257,10 +263,11 @@ export default function App() {
   // Keyboard
   useEffect(() => {
     const handleKey = (e) => {
-      if (!selectedRobotMac) return
+      const mac = selectedRobotMac
+      if (!mac) return
       const key = e.key.toLowerCase()
       const map = { w: 'forward', a: 'left', s: 'backward', d: 'right' }
-      if (map[key]) handleRobotCommand(map[key])
+      if (map[key]) robotCmdRef.current(map[key])
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
@@ -284,6 +291,8 @@ export default function App() {
       handleFeedback(setControlFeedback, feedbackTimerRef, e.message || 'Failed', true)
     }
   }, [selectedRobotMac, apiBase, handleFeedback])
+
+  robotCmdRef.current = handleRobotCommand
 
   const handleStop = useCallback(async () => {
     if (!selectedRobotMac) return
