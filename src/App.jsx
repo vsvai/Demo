@@ -263,10 +263,13 @@ export default function App() {
       setRobotStatus((prev) => {
         const now = Date.now()
         const updated = { ...prev }
+        const lookup = {}
+        for (const mac of robots) lookup[mac.toLowerCase()] = mac
         for (const r of results) {
           if (r.status === 'fulfilled') {
             const data = r.value
-            updated[data.mac] = { ...(updated[data.mac] || {}), online: data.udpReady, lastSeen: now }
+            const key = lookup[data.mac.toLowerCase()] || data.mac
+            updated[key] = { ...(updated[key] || {}), online: data.udpReady, lastSeen: now }
           }
         }
         return updated
