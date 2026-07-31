@@ -5,6 +5,7 @@ import {
   fetchWifiMacsList,
   fetchLogs,
   fetchWifiLogs,
+  fetchUdpStatus,
   sendRobotCommand,
   sendRobotStop,
   triggerOta,
@@ -21,6 +22,7 @@ import CameraFeed from './components/Camera/CameraFeed'
 
 const REFRESH_MS = 10000
 const ONLINE_THRESHOLD_MS = 120000
+const UDP_STATUS_INTERVAL = 30000
 const NAMES_KEY = 'robot_dashboard_device_names'
 
 function getInitialDomain() {
@@ -252,6 +254,28 @@ export default function App() {
     }, REFRESH_MS)
     return () => clearInterval(id)
   }, [selectedRobotMac, selectedWifiMac])
+
+  // UDP status polling for all robots every 30s
+  useEffect(() => {
+    if (!robots.length) return
+    const poll = async () => {
+      const results = await Promise.allSettled(robots.map((mac) => fetchUdpStatus(apiBase, mac)))
+      setRobotStatus((prev) => {
+        const now = Date.now()
+        const updated = { ...prev }
+        for (const r of results) {
+          if (r.status === 'fulfilled') {
+            const data = r.value
+            updated[data.mac] = { ...(updated[data.mac] || {}), online: data.udpReady, lastSeen: now }
+          }
+        }
+        return updated
+      })
+    }
+    poll()
+    const id = setInterval(poll, UDP_STATUS_INTERVAL)
+    return () => clearInterval(id)
+  }, [robots, apiBase])
 
   // Camera refresh
   useEffect(() => {

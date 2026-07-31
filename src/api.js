@@ -107,6 +107,19 @@ export async function fetchWifiLogs(apiBase, mac) {
   return parseJsonOrText(text);
 }
 
+export async function fetchUdpStatus(apiBase, mac) {
+  const url = apiBase + '/udp/status/' + encodeURIComponent(mac);
+  const res = await fetchWithTimeout(url);
+  const text = await res.text();
+  if (!res.ok) throw new Error('UDP status ' + res.status);
+  try {
+    const data = JSON.parse(text);
+    return { mac: data.mac, udpReady: !!data.udp_ready, otaPending: !!data.ota_pending };
+  } catch {
+    return { mac: mac.toLowerCase(), udpReady: false, otaPending: false };
+  }
+}
+
 export async function sendRobotCommand(apiBase, mac, command) {
   const url = apiBase + '/udp/start/' + encodeURIComponent(mac) + '/set/' + command;
   const res = await fetchWithTimeout(url);
