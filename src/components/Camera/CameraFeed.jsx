@@ -1,11 +1,21 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 
-const STREAMS = [
-  { id: 'normal', label: 'Normal' },
-  { id: 'edges', label: 'Edge Filter' },
+const MAX_ZOOM = 4
+const MIN_ZOOM = 1
+const ZOOM_STEP = 0.25
+
+const FILTERS = [
+  { id: 'normal', label: 'Normal', css: 'none' },
+  { id: 'edges', label: 'Edge', canvas: true },
+  { id: 'grayscale', label: 'Grayscale', css: 'grayscale(1)' },
+  { id: 'contrast', label: 'High Contrast', css: 'contrast(1.5) saturate(1.3)' },
+  { id: 'bwcontrast', label: 'Mono + Contrast', css: 'grayscale(1) contrast(1.55)' },
+  { id: 'enhanced', label: 'Enhanced', css: 'brightness(1.12) contrast(1.28) saturate(1.35)' },
+  { id: 'sepia', label: 'Sepia', css: 'sepia(0.8)' },
+  { id: 'invert', label: 'Invert', css: 'invert(1)' },
 ]
 
-function renderEdges(img, outCanvas, zoom) {
+function renderEdges(img, outCanvas) {
   const w = img.naturalWidth || img.width
   const h = img.naturalHeight || img.height
   if (!w || !h) return
@@ -54,88 +64,116 @@ function renderEdges(img, outCanvas, zoom) {
   tctx.putImageData(out, 0, 0)
 
   const octx = outCanvas.getContext('2d')
-  const scale = zoom ? 1 : 2
-  outCanvas.width = w * scale
-  outCanvas.height = h * scale
+  outCanvas.width = w
+  outCanvas.height = h
   octx.imageSmoothingEnabled = true
-  octx.imageSmoothingQuality = 'high'
-  octx.drawImage(temp, 0, 0, w, h, 0, 0, w * scale, h * scale)
+  octx.drawImage(temp, 0, 0)
 }
 
 export default function CameraFeed({ apiBase, ts }) {
-  const [mode, setMode] = useState('normal')
-  const [zoom, setZoom] = useState(false)
+  const [filterId, setFilterId] = useState('normal')
+  const [zoom, setZoom] = useState(1)
+  const [imgError, setImgError] = useState(false)
   const imgRef = useRef(null)
   const edgeCanvasRef = useRef(null)
 
   const frame = `${apiBase}/udp/camera/latest?ts=${ts}`
-  const isEdges = mode === 'edges'
+  const filter = FILTERS.find((f) => f.id === filterId)
+  const isEdges = filter?.canvas
 
-  const cycle = useCallback(() => {
-    setMode((m) => (m === 'normal' ? 'edges' : 'normal'))
-  }, [])
-
-  useEffect(() => {
-    const img = imgRef.current
-    if (isEdges && img && img.naturalWidth) {
-      renderEdges(img, edgeCanvasRef.current, zoom)
-    }
-  }, [isEdges, ts, zoom])
+  const incZoom = () => setZoom((z) => Math.min(MAX_ZOOM, Math.round((z + ZOOM_STEP) * 100) / 100))
+  const decZoom = () => setZoom((z) => Math.max(MIN_ZOOM, Math.round((z - ZOOM_STEP) * 100) / 100))
 
   const handleImgLoad = useCallback(() => {
     const img = imgRef.current
     if (!img || !img.naturalWidth) return
-    if (isEdges) renderEdges(img, edgeCanvasRef.current, zoom)
-  }, [isEdges, zoom])
+    setImgError(false)
+    if (isEdges) renderEdges(img, edgeCanvasRef.current)
+  }, [isEdges])
 
-  const current = STREAMS.find((s) => s.id === mode)
+  useEffect(() => {
+    const img = imgRef.current
+    if (isEdges && img && img.naturalWidth) {
+      renderEdges(img, edgeCanvasRef.current)
+    }
+  }, [isEdges, ts])
+
+  const viewStyle = {
+    transform: `scale(${zoom})`,
+    transformOrigin: 'center center',
+  }
 
   return (
-    <div className="mt-5 text-center">
-      <div className="flex items-center justify-center gap-3 mb-2">
-        <button
-          onClick={cycle}
-          title="Previous stream"
-          className="px-3 py-1.5 text-sm font-bold rounded-lg border border-border text-text hover:bg-gray-100 transition-colors"
-        >
-          ◀
-        </button>
-        <span className="text-xs font-semibold text-text-muted">
-          Stream {current.id === 'normal' ? 1 : 2} · {current.label}
-        </span>
-        <button
-          onClick={cycle}
-          title="Next stream"
-          className="px-3 py-1.5 text-sm font-bold rounded-lg border border-border text-text hover:bg-gray-100 transition-colors"
-        >
-          ▶
-        </button>
-        <button
-          onClick={() => setZoom((z) => !z)}
-          title="Toggle 1:1 / Fit"
-          className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors
-            ${zoom ? 'bg-accent text-white border-accent' : 'border-border text-text hover:bg-gray-100'}`}
-        >
-          {zoom ? '1:1' : 'Fit'}
-        </button>
+    <div className="flex-1 min-h-0 w-full flex flex-col">
+      <div className="flex items-center justify-between gap-2 mb-2 flex-wrap shrink-0">
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={decZoom}
+            disabled={zoom <= MIN_ZOOM}
+            title="Zoom out"
+            className="w-8 h-8 flex items-center justify-center text-lg font-bold rounded-md border border-border bg-white text-text hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            −
+          </button>
+          <span className="w-14 text-center text-xs font-bold font-mono text-text-muted">{zoom.toFixed(2)}×</span>
+          <button
+            onClick={incZoom}
+            disabled={zoom >= MAX_ZOOM}
+            title="Zoom in"
+            className="w-8 h-8 flex items-center justify-center text-lg font-bold rounded-md border border-border bg-white text-text hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            +
+          </button>
+          <button
+            onClick={() => setZoom(1)}
+            disabled={zoom === 1}
+            title="Reset zoom"
+            className="px-2.5 h-8 text-xs font-semibold rounded-md border border-border bg-white text-text-muted hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Reset
+          </button>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-semibold text-text-muted">Filter</span>
+          <select
+            value={filterId}
+            onChange={(e) => setFilterId(e.target.value)}
+            className="px-2.5 h-8 text-xs font-semibold rounded-md border border-border bg-white text-text cursor-pointer"
+          >
+            {FILTERS.map((f) => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      <div className="inline-block max-w-full bg-black border border-border rounded-lg overflow-hidden">
+      <div className="flex-1 min-h-0 w-full bg-black border border-border rounded-lg overflow-hidden flex items-center justify-center">
+        {imgError && (
+          <span className="text-xs font-semibold text-gray-400">No signal</span>
+        )}
         <img
           ref={imgRef}
           src={frame}
           alt="Camera Feed"
           crossOrigin="anonymous"
           onLoad={handleImgLoad}
-          onError={(e) => { e.target.style.display = 'none' }}
-          onLoadStart={(e) => { e.target.style.display = 'block' }}
-          className={`${isEdges ? 'hidden' : ''} ${zoom ? 'max-w-none' : 'max-w-full'}`}
-          style={zoom ? { width: 'auto', height: 'auto', imageRendering: 'pixelated' } : { width: '100%', imageRendering: 'auto' }}
+          onError={() => setImgError(true)}
+          onLoadStart={() => setImgError(false)}
+          className={`${isEdges ? 'hidden' : ''} w-full h-full object-contain`}
+          style={{
+            ...viewStyle,
+            filter: isEdges ? 'none' : filter?.css,
+            imageRendering: zoom > 1 ? 'pixelated' : 'auto',
+          }}
         />
         <canvas
           ref={edgeCanvasRef}
-          className={`${isEdges ? '' : 'hidden'} ${zoom ? 'max-w-none' : 'max-w-full'}`}
-          style={zoom ? { imageRendering: 'pixelated' } : { width: '100%', imageRendering: 'auto' }}
+          className={`${isEdges ? 'block' : 'hidden'} w-full h-full object-contain`}
+          style={{
+            ...viewStyle,
+            imageRendering: zoom > 1 ? 'pixelated' : 'auto',
+          }}
         />
       </div>
     </div>

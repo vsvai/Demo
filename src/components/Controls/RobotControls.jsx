@@ -4,11 +4,11 @@ export default function RobotControls({ onCommand, onStop, onOta, feedback }) {
       <button onClick={onStop} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-error text-error hover:bg-error-light transition-colors min-h-11">
         Stop
       </button>
-      <button onClick={() => onCommand('left')} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-wifi text-wifi hover:bg-wifi-light transition-colors min-h-11">
-        ← Go Left
+      <button onClick={() => onCommand('go_forward')} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-wifi text-wifi hover:bg-wifi-light transition-colors min-h-11">
+        Go Forward
       </button>
-      <button onClick={() => onCommand('right')} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-wifi text-wifi hover:bg-wifi-light transition-colors min-h-11">
-        Go Right →
+      <button onClick={() => onCommand('go_backward')} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-wifi text-wifi hover:bg-wifi-light transition-colors min-h-11">
+        Go Backward
       </button>
       <button onClick={onOta} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-warning text-warning hover:bg-warning-light transition-colors min-h-11">
         OTA

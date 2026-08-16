@@ -14,16 +14,19 @@ import {
 } from './api'
 import Header from './components/Header/Header'
 import Sidebar from './components/Sidebar/Sidebar'
+import DeviceHeader from './components/DeviceHeader'
 import RobotControls from './components/Controls/RobotControls'
 import WifiControls from './components/Controls/WifiControls'
 import StatsPanel from './components/Stats/StatsPanel'
 import LogsPanel from './components/Logs/LogsPanel'
-import CameraFeed from './components/Camera/CameraFeed'
+import CameraPanel from './components/Camera/CameraPanel'
+import PasscodeGate from './components/PasscodeGate'
 
 const REFRESH_MS = 10000
 const ONLINE_THRESHOLD_MS = 120000
 const UDP_STATUS_INTERVAL = 30000
 const NAMES_KEY = 'robot_dashboard_device_names'
+const SESSION_KEY = 'robot_dashboard_session'
 
 function getInitialDomain() {
   return localStorage.getItem('selected_domain') || 'https://server2.sudoyantra.com'
@@ -36,6 +39,18 @@ function loadDeviceNames() {
   } catch { return { robots: {}, wifi: {}, pinnedRobots: [], pinnedWifi: [] } }
 }
 
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
+function saveSession(session) {
+  if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  else localStorage.removeItem(SESSION_KEY)
+}
+
 function saveDeviceNames(names) {
   localStorage.setItem(NAMES_KEY, JSON.stringify(names))
 }
@@ -46,7 +61,6 @@ function getDefaultName(mac, index, type) {
 
 export default function App() {
   const [domain, setDomain] = useState(getInitialDomain)
-  const [activeTab, setActiveTab] = useState('robots')
   const [robots, setRobots] = useState([])
   const [robotStatus, setRobotStatus] = useState({})
   const [selectedRobotMac, setSelectedRobotMac] = useState(null)
@@ -63,7 +77,11 @@ export default function App() {
   const [wifiFeedback, setWifiFeedback] = useState(null)
   const [wifiTimer, setWifiTimer] = useState(10)
   const [cameraTs, setCameraTs] = useState(Date.now())
+  const [cameraOpen, setCameraOpen] = useState(false)
+  const [cameraSize, setCameraSize] = useState(40)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [deviceNames, setDeviceNames] = useState(loadDeviceNames)
+  const [session, setSession] = useState(loadSession)
 
   const refreshTimerRef = useRef(null)
   const countdownTimerRef = useRef(null)
@@ -162,6 +180,15 @@ export default function App() {
   }, [])
 
   const refresh = useCallback(async () => {
+    if (session?.guest) {
+      setRobots([])
+      setWifiDevices([])
+      setRobotStatus({})
+      setWifiStatus({})
+      setApiStatus('Guest view')
+      setApiStatusError(false)
+      return
+    }
     let parts = []
     let hasErr = false
     try {
@@ -205,7 +232,7 @@ export default function App() {
     }
     setApiStatus(parts.join(' · '))
     setApiStatusError(hasErr)
-  }, [apiBase, config.filterMacs])
+  }, [apiBase, config.filterMacs, session?.guest])
 
   const loadLogs = useCallback(async (mac, type) => {
     if (!mac) return
@@ -232,12 +259,48 @@ export default function App() {
 
   // Auto refresh
   useEffect(() => {
+    if (!session) return
     refreshRef.current()
     setCountdown(REFRESH_MS / 1000)
     refreshTimerRef.current = setInterval(() => { refreshRef.current(); setCountdown(REFRESH_MS / 1000) }, REFRESH_MS)
     countdownTimerRef.current = setInterval(() => setCountdown((c) => Math.max(0, c - 1)), 1000)
     return () => { clearInterval(refreshTimerRef.current); clearInterval(countdownTimerRef.current) }
+  }, [session])
+
+  const resetSelection = useCallback(() => {
+    setSelectedRobotMac(null)
+    setSelectedWifiMac(null)
+    setLogs([])
+    setRobots([])
+    setWifiDevices([])
+    setRobotStatus({})
+    setWifiStatus({})
+    setCameraOpen(false)
+    setCameraTs(Date.now())
   }, [])
+
+  const handleUnlock = useCallback((info) => {
+    resetSelection()
+    if (info.org) {
+      localStorage.setItem('selected_domain', info.org.domain)
+      setDomain(info.org.domain)
+    }
+    setSession(info)
+    saveSession(info)
+  }, [resetSelection])
+
+  const handleLock = useCallback(() => {
+    resetSelection()
+    setSession(null)
+    saveSession(null)
+  }, [resetSelection])
+
+  // Auto-select first robot once list loads
+  useEffect(() => {
+    if (robots.length && !selectedRobotMac && !selectedWifiMac) {
+      setSelectedRobotMac(robots[0])
+    }
+  }, [robots, selectedRobotMac, selectedWifiMac])
 
   // Load logs on selection
   useEffect(() => {
@@ -371,6 +434,9 @@ export default function App() {
     }
   }, [selectedWifiMac, apiBase, wifiTimer, handleFeedback])
 
+  const selectedType = selectedRobotMac ? 'robot' : selectedWifiMac ? 'wifi' : null
+  const selectedMac = selectedRobotMac || selectedWifiMac
+
   const selectedLabel = (() => {
     if (selectedRobotMac) {
       const idx = robots.indexOf(selectedRobotMac)
@@ -380,37 +446,77 @@ export default function App() {
       const idx = wifiDevices.indexOf(selectedWifiMac)
       return getDeviceName(selectedWifiMac, idx + 1, 'wifi')
     }
-    return 'Select a robot or Wi‑Fi device'
+    return ''
   })()
+
+  const selectedOnline = selectedRobotMac
+    ? robotStatus[selectedRobotMac]?.online
+    : selectedWifiMac
+      ? wifiStatus[selectedWifiMac]?.online
+      : null
 
   return (
     <div className="flex flex-col min-h-screen min-h-dvh">
-      <Header domain={domain} onDomainChange={handleDomainChange} countdown={countdown} title={title} onExport={exportNames} onImport={importNames} />
+      {!session && <PasscodeGate onUnlock={handleUnlock} />}
+      <Header
+        domain={domain} onDomainChange={handleDomainChange} countdown={countdown} title={title}
+        onExport={exportNames} onImport={importNames} apiStatus={apiStatus} apiStatusError={apiStatusError}
+        domainLocked={!!session} lockLabel={session?.guest ? 'Guest' : session?.org?.label} onLock={handleLock}
+      />
 
       <main className="flex flex-1 min-h-0 flex-col md:flex-row">
         <Sidebar
-          activeTab={activeTab} onTabChange={setActiveTab}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
           robots={robots} robotStatus={robotStatus} selectedRobotMac={selectedRobotMac} onSelectRobot={selectRobot}
-          wifiDevices={wifiDevices} wifiStatus={wifiStatus} selectedWifiMac={selectedWifiMac} onSelectWifi={selectWifi}
-          apiStatus={apiStatus} apiStatusError={apiStatusError}
-          getDeviceName={getDeviceName} renameDevice={renameDevice} togglePin={togglePin} isPinned={isPinned}
+          getDeviceName={getDeviceName} onRename={renameDevice} isPinned={isPinned} togglePin={togglePin}
         />
 
-        <section className="flex-1 flex flex-col min-w-0 p-3 md:p-4">
-          <div className="text-xs font-semibold text-text-muted mb-2 leading-snug">Logs — {selectedLabel}</div>
-
-          {selectedRobotMac && (
-            <RobotControls onCommand={handleRobotCommand} onStop={handleStop} onOta={handleOta} feedback={controlFeedback} />
+        <section className="flex-1 flex flex-col min-w-0 min-h-0 p-3 md:p-4">
+          {selectedRobotMac && cameraOpen && (
+            <CameraPanel
+              apiBase={apiBase}
+              ts={cameraTs}
+              deviceName={selectedLabel}
+              size={cameraSize}
+              onSizeChange={setCameraSize}
+              onClose={() => setCameraOpen(false)}
+            />
           )}
 
-          {selectedWifiMac && (
-            <WifiControls timer={wifiTimer} onTimerChange={setWifiTimer} onAction={handleWifiAction} feedback={wifiFeedback} />
+          {selectedType ? (
+            <>
+              <DeviceHeader
+                name={selectedLabel}
+                mac={selectedMac}
+                online={selectedOnline}
+                type={selectedType}
+                cameraOpen={cameraOpen}
+                onToggleCamera={() => setCameraOpen((o) => !o)}
+                onRename={(newName) => renameDevice(selectedMac, newName, selectedType)}
+              />
+
+              {selectedRobotMac && (
+                <RobotControls onCommand={handleRobotCommand} onStop={handleStop} onOta={handleOta} feedback={controlFeedback} />
+              )}
+
+              {selectedWifiMac && (
+                <WifiControls timer={wifiTimer} onTimerChange={setWifiTimer} onAction={handleWifiAction} feedback={wifiFeedback} />
+              )}
+
+              {selectedRobotMac && <StatsPanel data={stats} />}
+              <LogsPanel logs={logs} loading={loading} error={error} />
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-text-muted">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-12 h-12 opacity-40">
+                <rect x="4" y="8" width="16" height="12" rx="2" ry="2" />
+                <path d="M12 8V4M9 4h6" />
+                <circle cx="12" cy="14" r="3" />
+              </svg>
+              <p className="text-sm">{session?.guest ? 'Guest mode — enter an organization passcode to view robots' : 'Select a robot or Wi‑Fi device from the sidebar'}</p>
+            </div>
           )}
-
-          <StatsPanel data={stats} />
-          <LogsPanel logs={logs} loading={loading} error={error} />
-
-          {selectedRobotMac && <CameraFeed apiBase={apiBase} ts={cameraTs} />}
         </section>
       </main>
     </div>
