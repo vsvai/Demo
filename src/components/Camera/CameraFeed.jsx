@@ -73,6 +73,9 @@ function renderEdges(img, outCanvas) {
 export default function CameraFeed({ apiBase, ts }) {
   const [filterId, setFilterId] = useState('normal')
   const [zoom, setZoom] = useState(1)
+  const [rotation, setRotation] = useState(0)
+  const [flipH, setFlipH] = useState(false)
+  const [flipV, setFlipV] = useState(false)
   const [imgError, setImgError] = useState(false)
   const imgRef = useRef(null)
   const edgeCanvasRef = useRef(null)
@@ -83,6 +86,7 @@ export default function CameraFeed({ apiBase, ts }) {
 
   const incZoom = () => setZoom((z) => Math.min(MAX_ZOOM, Math.round((z + ZOOM_STEP) * 100) / 100))
   const decZoom = () => setZoom((z) => Math.max(MIN_ZOOM, Math.round((z - ZOOM_STEP) * 100) / 100))
+  const rotate = () => setRotation((r) => (r + 90) % 360)
 
   const handleImgLoad = useCallback(() => {
     const img = imgRef.current
@@ -99,7 +103,7 @@ export default function CameraFeed({ apiBase, ts }) {
   }, [isEdges, ts])
 
   const viewStyle = {
-    transform: `scale(${zoom})`,
+    transform: `scale(${zoom}) rotate(${rotation}deg) scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
     transformOrigin: 'center center',
   }
 
@@ -131,6 +135,42 @@ export default function CameraFeed({ apiBase, ts }) {
             className="px-2.5 h-8 text-xs font-semibold rounded-md border border-border bg-white text-text-muted hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Reset
+          </button>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={rotate}
+            title={`Rotate ${rotation}°`}
+            className="w-8 h-8 flex items-center justify-center rounded-md border border-border bg-white text-text-muted hover:bg-gray-50 transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+              <path d="M21.5 2v6h-6" />
+              <path d="M21.34 13.72A10 10 0 1 1 18.57 4.34L21.5 2" />
+            </svg>
+          </button>
+          <span className="text-xs font-mono font-bold text-text-muted w-8 text-center">{rotation}°</span>
+          <button
+            onClick={() => setFlipH((f) => !f)}
+            title="Flip horizontal"
+            className={`w-8 h-8 flex items-center justify-center rounded-md border border-border ${flipH ? 'bg-accent text-white' : 'bg-white text-text-muted hover:bg-gray-50'} transition-colors`}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+              <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3" />
+              <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3" />
+              <line x1="12" y1="20" x2="12" y2="4" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setFlipV((f) => !f)}
+            title="Flip vertical"
+            className={`w-8 h-8 flex items-center justify-center rounded-md border border-border ${flipV ? 'bg-accent text-white' : 'bg-white text-text-muted hover:bg-gray-50'} transition-colors`}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+              <path d="M3 8V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3" />
+              <path d="M3 16v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3" />
+              <line x1="4" y1="12" x2="20" y2="12" />
+            </svg>
           </button>
         </div>
 
