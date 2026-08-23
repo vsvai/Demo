@@ -488,15 +488,20 @@ export default function App() {
 
         <section className="flex-1 flex flex-col min-w-0 min-h-0 p-3 md:p-4">
           {selectedRobotMac && cameraOpen && (
-            <CameraPanel
-              apiBase={apiBase}
-              ts={cameraTs}
-              deviceName={selectedLabel}
-              size={cameraSize}
-              onSizeChange={setCameraSize}
-              lastCmd={lastCmd}
-              onClose={() => setCameraOpen(false)}
-            />
+            <div className="flex gap-3 mb-4">
+              <CameraPanel
+                apiBase={apiBase}
+                ts={cameraTs}
+                deviceName={selectedLabel}
+                size={cameraSize}
+                onSizeChange={setCameraSize}
+                lastCmd={lastCmd}
+                onClose={() => setCameraOpen(false)}
+              />
+              <div className="hidden md:flex w-72 xl:w-80 shrink-0" style={{ height: `${cameraSize}vh` }}>
+                <MapPanel lastCmd={lastCmd} />
+              </div>
+            </div>
           )}
 
           {selectedType ? (
@@ -528,7 +533,7 @@ export default function App() {
             {selectedRobotMac && <StatsPanel data={stats} />}
             <div className="flex-1 min-h-0 flex gap-3">
               <LogsPanel logs={logs} loading={loading} error={error} />
-              {selectedRobotMac && (
+              {selectedRobotMac && !cameraOpen && (
                 <div className="hidden lg:flex w-72 xl:w-80 shrink-0 min-h-0">
                   <MapPanel lastCmd={lastCmd} />
                 </div>

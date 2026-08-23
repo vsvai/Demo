@@ -21,7 +21,7 @@ function XIcon() {
 export default function CameraPanel({ apiBase, ts, deviceName, onClose, size, onSizeChange, lastCmd }) {
   return (
     <div
-      className="w-full bg-white border border-border rounded-xl p-3 mb-4 flex flex-col"
+      className="flex-1 min-w-0 bg-white border border-border rounded-xl p-3 flex flex-col"
       style={{ height: `${size}vh` }}
     >
       <div className="flex items-center justify-between gap-2 mb-2.5 shrink-0 flex-wrap">
