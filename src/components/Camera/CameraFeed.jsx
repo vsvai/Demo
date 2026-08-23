@@ -233,11 +233,11 @@ export default function CameraFeed({ apiBase, ts }) {
             preserveAspectRatio="none"
             className="absolute inset-0 w-full h-full pointer-events-none"
           >
-            <line x1="15" y1="97" x2="38" y2="40" stroke="white" strokeWidth="0.6" opacity="0.85" vectorEffect="non-scaling-stroke" />
-            <line x1="85" y1="97" x2="62" y2="40" stroke="white" strokeWidth="0.6" opacity="0.85" vectorEffect="non-scaling-stroke" />
-            <line x1="21.9" y1="80" x2="78.1" y2="80" stroke="#ef4444" strokeWidth="0.5" strokeDasharray="3 2" opacity="0.9" vectorEffect="non-scaling-stroke" />
-            <line x1="29.9" y1="60" x2="70.1" y2="60" stroke="#eab308" strokeWidth="0.5" strokeDasharray="3 2" opacity="0.9" vectorEffect="non-scaling-stroke" />
-            <line x1="36" y1="45" x2="64" y2="45" stroke="#22c55e" strokeWidth="0.5" strokeDasharray="3 2" opacity="0.9" vectorEffect="non-scaling-stroke" />
+            <line x1="15" y1="98" x2="35" y2="30" stroke="white" strokeWidth="1.4" opacity="0.9" vectorEffect="non-scaling-stroke" />
+            <line x1="85" y1="98" x2="65" y2="30" stroke="white" strokeWidth="1.4" opacity="0.9" vectorEffect="non-scaling-stroke" />
+            <line x1="20.3" y1="80" x2="79.7" y2="80" stroke="#ef4444" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" />
+            <line x1="26.2" y1="60" x2="73.8" y2="60" stroke="#eab308" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" />
+            <line x1="31.5" y1="42" x2="68.5" y2="42" stroke="#22c55e" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" />
           </svg>
         )}
       </div>

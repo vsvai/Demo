@@ -82,6 +82,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [deviceNames, setDeviceNames] = useState(loadDeviceNames)
   const [session, setSession] = useState(loadSession)
+  const [activeCmd, setActiveCmd] = useState(null)
 
   const refreshTimerRef = useRef(null)
   const countdownTimerRef = useRef(null)
@@ -90,6 +91,7 @@ export default function App() {
   const refreshRef = useRef(null)
   const loadLogsRef = useRef(null)
   const robotCmdRef = useRef(null)
+  const activeCmdTimerRef = useRef(null)
 
   const config = useMemo(() => getDomainConfig(domain), [domain])
   const apiBase = config.apiBase
@@ -369,17 +371,26 @@ export default function App() {
   }, [selectedRobotMac])
 
   // Keyboard
+  const flashActiveCmd = useCallback((cmd) => {
+    setActiveCmd(cmd)
+    clearTimeout(activeCmdTimerRef.current)
+    activeCmdTimerRef.current = setTimeout(() => setActiveCmd(null), 300)
+  }, [])
+
   useEffect(() => {
     const handleKey = (e) => {
       const mac = selectedRobotMac
       if (!mac) return
       const key = e.key.toLowerCase()
       const map = { w: 'forward', a: 'left', s: 'backward', d: 'right' }
-      if (map[key]) robotCmdRef.current(map[key])
+      if (map[key]) {
+        robotCmdRef.current(map[key])
+        flashActiveCmd(map[key])
+      }
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [selectedRobotMac])
+  }, [selectedRobotMac, flashActiveCmd])
 
   const selectRobot = useCallback((mac) => { setSelectedRobotMac(mac); setSelectedWifiMac(null) }, [])
   const selectWifi = useCallback((mac) => { setSelectedWifiMac(mac); setSelectedRobotMac(null) }, [])
@@ -497,7 +508,13 @@ export default function App() {
               />
 
               {selectedRobotMac && (
-                <RobotControls onCommand={handleRobotCommand} onStop={handleStop} onOta={handleOta} feedback={controlFeedback} />
+                <RobotControls
+                  onCommand={(cmd) => { handleRobotCommand(cmd); flashActiveCmd(cmd) }}
+                  onStop={handleStop}
+                  onOta={handleOta}
+                  feedback={controlFeedback}
+                  activeCmd={activeCmd}
+                />
               )}
 
               {selectedWifiMac && (
