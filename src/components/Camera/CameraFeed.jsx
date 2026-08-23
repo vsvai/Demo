@@ -276,11 +276,16 @@ export default function CameraFeed({ apiBase, ts, lastCmd }) {
                 transition: lineShift === 'none' ? 'transform 450ms ease-out' : 'transform 120ms ease-out',
               }}
             >
-              <path d={`M15,98 Q${15 + bend * 0.45},64 ${35 + bend},30`} stroke="white" strokeWidth="1.4" fill="none" opacity="0.9" vectorEffect="non-scaling-stroke" />
-              <path d={`M85,98 Q${85 + bend * 0.45},64 ${65 + bend},30`} stroke="white" strokeWidth="1.4" fill="none" opacity="0.9" vectorEffect="non-scaling-stroke" />
-              <line x1="20.3" y1="80" x2="79.7" y2="80" stroke="#ef4444" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.22} 50 80)`} />
-              <line x1="26.2" y1="60" x2="73.8" y2="60" stroke="#eab308" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.38} 50 60)`} />
-              <line x1="31.5" y1="42" x2="68.5" y2="42" stroke="#22c55e" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.55} 50 42)`} />
+              <path d={`M15,98 Q${15 + bend * 0.45},64 ${35 + bend},30`} stroke="rgba(0,0,0,0.6)" strokeWidth="4" fill="none" vectorEffect="non-scaling-stroke" />
+              <path d={`M15,98 Q${15 + bend * 0.45},64 ${35 + bend},30`} stroke="#ffffff" strokeWidth="2.6" fill="none" vectorEffect="non-scaling-stroke" />
+              <path d={`M85,98 Q${85 + bend * 0.45},64 ${65 + bend},30`} stroke="rgba(0,0,0,0.6)" strokeWidth="4" fill="none" vectorEffect="non-scaling-stroke" />
+              <path d={`M85,98 Q${85 + bend * 0.45},64 ${65 + bend},30`} stroke="#ffffff" strokeWidth="2.6" fill="none" vectorEffect="non-scaling-stroke" />
+              <line x1="20.3" y1="80" x2="79.7" y2="80" stroke="rgba(0,0,0,0.6)" strokeWidth="2.8" strokeDasharray="4 2.5" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.22} 50 80)`} />
+              <line x1="20.3" y1="80" x2="79.7" y2="80" stroke="#ef4444" strokeWidth="1.7" strokeDasharray="4 2.5" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.22} 50 80)`} />
+              <line x1="26.2" y1="60" x2="73.8" y2="60" stroke="rgba(0,0,0,0.6)" strokeWidth="2.8" strokeDasharray="4 2.5" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.38} 50 60)`} />
+              <line x1="26.2" y1="60" x2="73.8" y2="60" stroke="#eab308" strokeWidth="1.7" strokeDasharray="4 2.5" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.38} 50 60)`} />
+              <line x1="31.5" y1="42" x2="68.5" y2="42" stroke="rgba(0,0,0,0.6)" strokeWidth="2.8" strokeDasharray="4 2.5" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.55} 50 42)`} />
+              <line x1="31.5" y1="42" x2="68.5" y2="42" stroke="#22c55e" strokeWidth="1.7" strokeDasharray="4 2.5" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.55} 50 42)`} />
             </g>
           </svg>
         )}
