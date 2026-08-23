@@ -1,3 +1,5 @@
+import { useState, useRef } from 'react'
+
 const DIRS = [
   { cmd: 'forward', label: 'Forward', kbd: 'W', grid: 'col-start-2', icon: <path d="M12 19V5M5 12l7-7 7 7" /> },
   { cmd: 'left', label: 'Left', kbd: 'A', grid: 'col-start-1 row-start-2', icon: <path d="M19 12H5M12 5l-7 7 7 7" /> },
@@ -5,7 +7,25 @@ const DIRS = [
   { cmd: 'right', label: 'Right', kbd: 'D', grid: 'col-start-3 row-start-2', icon: <path d="M5 12h14M12 5l7 7-7 7" /> },
 ]
 
+const REPEAT_MS = 250
+
 export default function RobotControls({ onCommand, onStop, onOta, feedback, activeCmd }) {
+  const [held, setHeld] = useState(null)
+  const repeatRef = useRef(null)
+
+  const press = (cmd) => {
+    if (repeatRef.current) return
+    setHeld(cmd)
+    onCommand(cmd)
+    repeatRef.current = setInterval(() => onCommand(cmd), REPEAT_MS)
+  }
+
+  const release = () => {
+    clearInterval(repeatRef.current)
+    repeatRef.current = null
+    setHeld(null)
+  }
+
   return (
     <div className="flex flex-wrap gap-2 items-center pb-3">
       <button onClick={onStop} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-error text-error hover:bg-error-light transition-colors min-h-11">
@@ -22,14 +42,18 @@ export default function RobotControls({ onCommand, onStop, onOta, feedback, acti
       </button>
 
       {/* WASD Grid */}
-      <div className="grid grid-cols-3 gap-1 w-56 mt-2">
+      <div className="grid grid-cols-3 gap-1 w-56 mt-2 select-none" style={{ WebkitTouchCallout: 'none' }}>
         {DIRS.map((d) => {
-          const pressed = activeCmd === d.cmd
+          const pressed = held === d.cmd || activeCmd === d.cmd
           return (
             <button
               key={d.cmd}
-              onClick={() => onCommand(d.cmd)}
-              className={`${d.grid} flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 min-h-[52px] rounded-lg border transition-all duration-100 select-none ${
+              onPointerDown={(e) => { e.preventDefault(); press(d.cmd) }}
+              onPointerUp={release}
+              onPointerLeave={release}
+              onPointerCancel={release}
+              onContextMenu={(e) => e.preventDefault()}
+              className={`${d.grid} flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 min-h-[52px] rounded-lg border transition-all duration-100 select-none touch-none [-webkit-touch-callout:none] ${
                 pressed
                   ? 'bg-blue-500 text-white border-blue-600 shadow-inner scale-95'
                   : 'border-blue-500 text-blue-500 bg-white hover:bg-blue-50'
