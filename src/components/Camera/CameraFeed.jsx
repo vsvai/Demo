@@ -76,6 +76,7 @@ export default function CameraFeed({ apiBase, ts }) {
   const [rotation, setRotation] = useState(0)
   const [flipH, setFlipH] = useState(false)
   const [flipV, setFlipV] = useState(false)
+  const [showLines, setShowLines] = useState(false)
   const [imgError, setImgError] = useState(false)
   const imgRef = useRef(null)
   const edgeCanvasRef = useRef(null)
@@ -172,6 +173,17 @@ export default function CameraFeed({ apiBase, ts }) {
               <line x1="4" y1="12" x2="20" y2="12" />
             </svg>
           </button>
+          <button
+            onClick={() => setShowLines((s) => !s)}
+            title="Parking lines"
+            className={`w-8 h-8 flex items-center justify-center rounded-md border border-border ${showLines ? 'bg-accent text-white' : 'bg-white text-text-muted hover:bg-gray-50'} transition-colors`}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+              <path d="M6 21L9 10h6l3 11z" />
+              <line x1="7.5" y1="16" x2="16.5" y2="16" strokeDasharray="2 2" />
+              <line x1="12" y1="10" x2="12" y2="21" />
+            </svg>
+          </button>
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -188,7 +200,7 @@ export default function CameraFeed({ apiBase, ts }) {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 w-full bg-black border border-border rounded-lg overflow-hidden flex items-center justify-center">
+      <div className="relative flex-1 min-h-0 w-full bg-black border border-border rounded-lg overflow-hidden flex items-center justify-center">
         {imgError && (
           <span className="text-xs font-semibold text-gray-400">No signal</span>
         )}
@@ -215,6 +227,19 @@ export default function CameraFeed({ apiBase, ts }) {
             imageRendering: zoom > 1 ? 'pixelated' : 'auto',
           }}
         />
+        {showLines && (
+          <svg
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            className="absolute inset-0 w-full h-full pointer-events-none"
+          >
+            <line x1="15" y1="97" x2="38" y2="40" stroke="white" strokeWidth="0.6" opacity="0.85" vectorEffect="non-scaling-stroke" />
+            <line x1="85" y1="97" x2="62" y2="40" stroke="white" strokeWidth="0.6" opacity="0.85" vectorEffect="non-scaling-stroke" />
+            <line x1="21.9" y1="80" x2="78.1" y2="80" stroke="#ef4444" strokeWidth="0.5" strokeDasharray="3 2" opacity="0.9" vectorEffect="non-scaling-stroke" />
+            <line x1="29.9" y1="60" x2="70.1" y2="60" stroke="#eab308" strokeWidth="0.5" strokeDasharray="3 2" opacity="0.9" vectorEffect="non-scaling-stroke" />
+            <line x1="36" y1="45" x2="64" y2="45" stroke="#22c55e" strokeWidth="0.5" strokeDasharray="3 2" opacity="0.9" vectorEffect="non-scaling-stroke" />
+          </svg>
+        )}
       </div>
     </div>
   )
