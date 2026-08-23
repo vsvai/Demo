@@ -18,7 +18,7 @@ function XIcon() {
   )
 }
 
-export default function CameraPanel({ apiBase, ts, deviceName, onClose, size, onSizeChange }) {
+export default function CameraPanel({ apiBase, ts, deviceName, onClose, size, onSizeChange, lastCmd }) {
   return (
     <div
       className="w-full bg-white border border-border rounded-xl p-3 mb-4 flex flex-col"
@@ -53,7 +53,7 @@ export default function CameraPanel({ apiBase, ts, deviceName, onClose, size, on
         </div>
       </div>
       <div className="flex-1 min-h-0 flex flex-col">
-        <CameraFeed apiBase={apiBase} ts={ts} />
+        <CameraFeed apiBase={apiBase} ts={ts} lastCmd={lastCmd} />
       </div>
     </div>
   )

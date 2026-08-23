@@ -16,6 +16,7 @@ import Header from './components/Header/Header'
 import Sidebar from './components/Sidebar/Sidebar'
 import DeviceHeader from './components/DeviceHeader'
 import RobotControls from './components/Controls/RobotControls'
+import MapPanel from './components/Map/MapPanel'
 import WifiControls from './components/Controls/WifiControls'
 import StatsPanel from './components/Stats/StatsPanel'
 import LogsPanel from './components/Logs/LogsPanel'
@@ -83,6 +84,7 @@ export default function App() {
   const [deviceNames, setDeviceNames] = useState(loadDeviceNames)
   const [session, setSession] = useState(loadSession)
   const [activeCmd, setActiveCmd] = useState(null)
+  const [lastCmd, setLastCmd] = useState(null)
 
   const refreshTimerRef = useRef(null)
   const countdownTimerRef = useRef(null)
@@ -373,6 +375,7 @@ export default function App() {
   // Keyboard
   const flashActiveCmd = useCallback((cmd) => {
     setActiveCmd(cmd)
+    setLastCmd({ cmd, ts: Date.now() })
     clearTimeout(activeCmdTimerRef.current)
     activeCmdTimerRef.current = setTimeout(() => setActiveCmd(null), 300)
   }, [])
@@ -491,6 +494,7 @@ export default function App() {
               deviceName={selectedLabel}
               size={cameraSize}
               onSizeChange={setCameraSize}
+              lastCmd={lastCmd}
               onClose={() => setCameraOpen(false)}
             />
           )}
@@ -521,8 +525,15 @@ export default function App() {
                 <WifiControls timer={wifiTimer} onTimerChange={setWifiTimer} onAction={handleWifiAction} feedback={wifiFeedback} />
               )}
 
-              {selectedRobotMac && <StatsPanel data={stats} />}
+            {selectedRobotMac && <StatsPanel data={stats} />}
+            <div className="flex-1 min-h-0 flex gap-3">
               <LogsPanel logs={logs} loading={loading} error={error} />
+              {selectedRobotMac && (
+                <div className="hidden lg:flex w-72 xl:w-80 shrink-0 min-h-0">
+                  <MapPanel lastCmd={lastCmd} />
+                </div>
+              )}
+            </div>
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-text-muted">

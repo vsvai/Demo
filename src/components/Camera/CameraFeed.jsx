@@ -4,6 +4,13 @@ const MAX_ZOOM = 4
 const MIN_ZOOM = 1
 const ZOOM_STEP = 0.25
 
+const LINE_MOVES = {
+  forward: { transform: 'translateY(7%) scale(1.15)' },
+  backward: { transform: 'translateY(-6%) scale(0.88)' },
+  left: { transform: 'translateX(8%)' },
+  right: { transform: 'translateX(-8%)' },
+}
+
 const FILTERS = [
   { id: 'normal', label: 'Normal', css: 'none' },
   { id: 'edges', label: 'Edge', canvas: true },
@@ -70,16 +77,28 @@ function renderEdges(img, outCanvas) {
   octx.drawImage(temp, 0, 0)
 }
 
-export default function CameraFeed({ apiBase, ts }) {
+export default function CameraFeed({ apiBase, ts, lastCmd }) {
   const [filterId, setFilterId] = useState('normal')
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
   const [flipH, setFlipH] = useState(false)
   const [flipV, setFlipV] = useState(false)
   const [showLines, setShowLines] = useState(false)
+  const [lineShift, setLineShift] = useState('none')
   const [imgError, setImgError] = useState(false)
   const imgRef = useRef(null)
   const edgeCanvasRef = useRef(null)
+  const lineShiftTimerRef = useRef(null)
+
+  useEffect(() => {
+    if (!lastCmd) return
+    const move = LINE_MOVES[lastCmd.cmd]
+    if (!move || !showLines) return
+    setLineShift(move.transform)
+    clearTimeout(lineShiftTimerRef.current)
+    lineShiftTimerRef.current = setTimeout(() => setLineShift('none'), 380)
+    return () => clearTimeout(lineShiftTimerRef.current)
+  }, [lastCmd, showLines])
 
   const frame = `${apiBase}/udp/camera/latest?ts=${ts}`
   const filter = FILTERS.find((f) => f.id === filterId)
@@ -233,11 +252,19 @@ export default function CameraFeed({ apiBase, ts }) {
             preserveAspectRatio="none"
             className="absolute inset-0 w-full h-full pointer-events-none"
           >
-            <line x1="15" y1="98" x2="35" y2="30" stroke="white" strokeWidth="1.4" opacity="0.9" vectorEffect="non-scaling-stroke" />
-            <line x1="85" y1="98" x2="65" y2="30" stroke="white" strokeWidth="1.4" opacity="0.9" vectorEffect="non-scaling-stroke" />
-            <line x1="20.3" y1="80" x2="79.7" y2="80" stroke="#ef4444" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" />
-            <line x1="26.2" y1="60" x2="73.8" y2="60" stroke="#eab308" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" />
-            <line x1="31.5" y1="42" x2="68.5" y2="42" stroke="#22c55e" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" />
+            <g
+              style={{
+                transform: lineShift,
+                transformOrigin: '50% 100%',
+                transition: lineShift === 'none' ? 'transform 450ms ease-out' : 'transform 120ms ease-out',
+              }}
+            >
+              <line x1="15" y1="98" x2="35" y2="30" stroke="white" strokeWidth="1.4" opacity="0.9" vectorEffect="non-scaling-stroke" />
+              <line x1="85" y1="98" x2="65" y2="30" stroke="white" strokeWidth="1.4" opacity="0.9" vectorEffect="non-scaling-stroke" />
+              <line x1="20.3" y1="80" x2="79.7" y2="80" stroke="#ef4444" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" />
+              <line x1="26.2" y1="60" x2="73.8" y2="60" stroke="#eab308" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" />
+              <line x1="31.5" y1="42" x2="68.5" y2="42" stroke="#22c55e" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" />
+            </g>
           </svg>
         )}
       </div>
