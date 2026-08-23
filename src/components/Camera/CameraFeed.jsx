@@ -100,8 +100,8 @@ export default function CameraFeed({ apiBase, ts, lastCmd }) {
       return () => clearTimeout(lineShiftTimerRef.current)
     }
     if (cmd !== 'left' && cmd !== 'right') return
-    // Turn: rails curve as the vanishing point sweeps opposite the turn direction
-    const target = cmd === 'left' ? 16 : -16
+    // Turn: only on left/right — rails curve into the turn direction
+    const target = cmd === 'left' ? -16 : 16
     const start = performance.now()
     let raf
     const tick = (now) => {
