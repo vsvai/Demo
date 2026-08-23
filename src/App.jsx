@@ -10,6 +10,8 @@ import {
   sendRobotStop,
   triggerOta,
   sendWifiAction,
+  fetchTelemetry,
+  fetchTelemetrySettings,
   extractStatsFromLogs,
 } from './api'
 import Header from './components/Header/Header'
@@ -19,6 +21,7 @@ import RobotControls from './components/Controls/RobotControls'
 import MapPanel from './components/Map/MapPanel'
 import WifiControls from './components/Controls/WifiControls'
 import StatsPanel from './components/Stats/StatsPanel'
+import TelemetryPanel from './components/Telemetry/TelemetryPanel'
 import LogsPanel from './components/Logs/LogsPanel'
 import CameraPanel from './components/Camera/CameraPanel'
 import PasscodeGate from './components/PasscodeGate'
@@ -85,6 +88,8 @@ export default function App() {
   const [session, setSession] = useState(loadSession)
   const [activeCmd, setActiveCmd] = useState(null)
   const [lastCmd, setLastCmd] = useState(null)
+  const [telemetry, setTelemetry] = useState(null)
+  const [lowLimit, setLowLimit] = useState(null)
 
   const refreshTimerRef = useRef(null)
   const countdownTimerRef = useRef(null)
@@ -372,6 +377,30 @@ export default function App() {
     return () => clearInterval(id)
   }, [selectedRobotMac])
 
+  // Telemetry polling
+  useEffect(() => {
+    let cancelled = false
+    setTelemetry(null)
+    if (!selectedRobotMac) return undefined
+    const poll = async () => {
+      try {
+        const data = await fetchTelemetry(apiBase, selectedRobotMac)
+        if (!cancelled) setTelemetry(data)
+      } catch { /* keep last known */ }
+    }
+    poll()
+    const id = setInterval(poll, 5000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [selectedRobotMac, apiBase])
+
+  useEffect(() => {
+    let cancelled = false
+    fetchTelemetrySettings(apiBase)
+      .then((s) => { if (!cancelled) setLowLimit(s.low_limit) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [apiBase])
+
   // Keyboard
   const flashActiveCmd = useCallback((cmd) => {
     setActiveCmd(cmd)
@@ -530,7 +559,8 @@ export default function App() {
                 <WifiControls timer={wifiTimer} onTimerChange={setWifiTimer} onAction={handleWifiAction} feedback={wifiFeedback} />
               )}
 
-            {selectedRobotMac && <StatsPanel data={stats} />}
+              {selectedRobotMac && <StatsPanel data={stats} />}
+              {selectedRobotMac && <TelemetryPanel data={telemetry} lowLimit={lowLimit} />}
             <div className="flex-1 min-h-0 flex gap-3">
               <LogsPanel logs={logs} loading={loading} error={error} />
               {selectedRobotMac && !cameraOpen && (

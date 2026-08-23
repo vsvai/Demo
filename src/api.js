@@ -144,6 +144,20 @@ export async function triggerOta(apiBase, mac) {
   return text.trim() || 'OK';
 }
 
+export async function fetchTelemetry(apiBase, mac) {
+  const url = apiBase + '/telemetry/' + encodeURIComponent(mac);
+  const res = await fetchWithTimeout(url);
+  if (!res.ok) throw new Error('Telemetry ' + res.status);
+  return JSON.parse(await res.text());
+}
+
+export async function fetchTelemetrySettings(apiBase) {
+  const url = apiBase + '/telemetry/settings';
+  const res = await fetchWithTimeout(url);
+  if (!res.ok) throw new Error('Telemetry settings ' + res.status);
+  return JSON.parse(await res.text());
+}
+
 export async function sendWifiAction(apiBase, mac, kind, seconds) {
   const macLower = String(mac).toLowerCase();
   const path =
