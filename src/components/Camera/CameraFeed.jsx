@@ -83,7 +83,6 @@ export default function CameraFeed({ apiBase, ts, lastCmd }) {
   const [flipV, setFlipV] = useState(false)
   const [showLines, setShowLines] = useState(false)
   const [lineShift, setLineShift] = useState('none')
-  const [bend, setBend] = useState(0)
   const [imgError, setImgError] = useState(false)
   const imgRef = useRef(null)
   const edgeCanvasRef = useRef(null)
@@ -91,30 +90,12 @@ export default function CameraFeed({ apiBase, ts, lastCmd }) {
 
   useEffect(() => {
     if (!lastCmd || !showLines) return
-    const cmd = lastCmd.cmd
-    const move = LINE_MOVES[cmd]
-    if (move) {
-      setLineShift(move.transform)
-      clearTimeout(lineShiftTimerRef.current)
-      lineShiftTimerRef.current = setTimeout(() => setLineShift('none'), 380)
-      return () => clearTimeout(lineShiftTimerRef.current)
-    }
-    if (cmd !== 'left' && cmd !== 'right') return
-    // Turn: only on left/right — rails curve into the turn direction
-    const target = cmd === 'left' ? -16 : 16
-    const start = performance.now()
-    let raf
-    const tick = (now) => {
-      const t = (now - start) / 1000
-      if (t >= 0.75) {
-        setBend(0)
-        return
-      }
-      setBend(target * Math.sin((t / 0.75) * Math.PI))
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    const move = LINE_MOVES[lastCmd.cmd]
+    if (!move) return
+    setLineShift(move.transform)
+    clearTimeout(lineShiftTimerRef.current)
+    lineShiftTimerRef.current = setTimeout(() => setLineShift('none'), 380)
+    return () => clearTimeout(lineShiftTimerRef.current)
   }, [lastCmd, showLines])
 
   const frame = `${apiBase}/udp/camera/latest?ts=${ts}`
@@ -284,24 +265,24 @@ export default function CameraFeed({ apiBase, ts, lastCmd }) {
               }}
             >
               {/* soft glow */}
-              <path d={`M15,98 Q${15 + bend * 0.45},64 ${35 + bend},30`} stroke="white" strokeWidth="7" fill="none" opacity="0.18" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-              <path d={`M85,98 Q${85 + bend * 0.45},64 ${65 + bend},30`} stroke="white" strokeWidth="7" fill="none" opacity="0.18" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              <path d="M15,98 L35,30" stroke="white" strokeWidth="7" fill="none" opacity="0.18" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              <path d="M85,98 L65,30" stroke="white" strokeWidth="7" fill="none" opacity="0.18" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
               {/* dark casing */}
-              <path d={`M15,98 Q${15 + bend * 0.45},64 ${35 + bend},30`} stroke="rgba(0,0,0,0.6)" strokeWidth="4" fill="none" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-              <path d={`M85,98 Q${85 + bend * 0.45},64 ${65 + bend},30`} stroke="rgba(0,0,0,0.6)" strokeWidth="4" fill="none" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              <path d="M15,98 L35,30" stroke="rgba(0,0,0,0.6)" strokeWidth="4" fill="none" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              <path d="M85,98 L65,30" stroke="rgba(0,0,0,0.6)" strokeWidth="4" fill="none" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
               {/* bright cores */}
-              <path d={`M15,98 Q${15 + bend * 0.45},64 ${35 + bend},30`} stroke="#ffffff" strokeWidth="2.6" fill="none" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-              <path d={`M85,98 Q${85 + bend * 0.45},64 ${65 + bend},30`} stroke="#ffffff" strokeWidth="2.6" fill="none" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              <path d="M15,98 L35,30" stroke="#ffffff" strokeWidth="2.6" fill="none" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              <path d="M85,98 L65,30" stroke="#ffffff" strokeWidth="2.6" fill="none" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
               {/* center guide */}
-              <path d={`M50,98 Q50,66 ${50 + bend * 0.8},34`} stroke="rgba(0,0,0,0.5)" strokeWidth="3" fill="none" strokeLinecap="round" strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
-              <path d={`M50,98 Q50,66 ${50 + bend * 0.8},34`} stroke="url(#guidefade)" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
+              <path d="M50,98 L50,34" stroke="rgba(0,0,0,0.5)" strokeWidth="3" fill="none" strokeLinecap="round" strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
+              <path d="M50,98 L50,34" stroke="url(#guidefade)" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
               {/* distance gates */}
-              <line x1="20.3" y1="80" x2="79.7" y2="80" stroke="rgba(0,0,0,0.6)" strokeWidth="2.8" strokeDasharray="4 2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.22} 50 80)`} />
-              <line x1="20.3" y1="80" x2="79.7" y2="80" stroke="#ef4444" strokeWidth="1.7" strokeDasharray="4 2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.22} 50 80)`} />
-              <line x1="26.2" y1="60" x2="73.8" y2="60" stroke="rgba(0,0,0,0.6)" strokeWidth="2.8" strokeDasharray="4 2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.38} 50 60)`} />
-              <line x1="26.2" y1="60" x2="73.8" y2="60" stroke="#eab308" strokeWidth="1.7" strokeDasharray="4 2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.38} 50 60)`} />
-              <line x1="31.5" y1="42" x2="68.5" y2="42" stroke="rgba(0,0,0,0.6)" strokeWidth="2.8" strokeDasharray="4 2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.55} 50 42)`} />
-              <line x1="31.5" y1="42" x2="68.5" y2="42" stroke="#22c55e" strokeWidth="1.7" strokeDasharray="4 2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.55} 50 42)`} />
+              <line x1="20.3" y1="80" x2="79.7" y2="80" stroke="rgba(0,0,0,0.6)" strokeWidth="2.8" strokeDasharray="4 2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              <line x1="20.3" y1="80" x2="79.7" y2="80" stroke="#ef4444" strokeWidth="1.7" strokeDasharray="4 2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              <line x1="26.2" y1="60" x2="73.8" y2="60" stroke="rgba(0,0,0,0.6)" strokeWidth="2.8" strokeDasharray="4 2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              <line x1="26.2" y1="60" x2="73.8" y2="60" stroke="#eab308" strokeWidth="1.7" strokeDasharray="4 2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              <line x1="31.5" y1="42" x2="68.5" y2="42" stroke="rgba(0,0,0,0.6)" strokeWidth="2.8" strokeDasharray="4 2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              <line x1="31.5" y1="42" x2="68.5" y2="42" stroke="#22c55e" strokeWidth="1.7" strokeDasharray="4 2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
               {/* stop bar */}
               <line x1="17" y1="95" x2="83" y2="95" stroke="rgba(0,0,0,0.55)" strokeWidth="4" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
               <line x1="17" y1="95" x2="83" y2="95" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" opacity="0.9" vectorEffect="non-scaling-stroke" />
