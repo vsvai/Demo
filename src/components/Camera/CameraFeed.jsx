@@ -7,8 +7,6 @@ const ZOOM_STEP = 0.25
 const LINE_MOVES = {
   forward: { transform: 'translateY(7%) scale(1.15)' },
   backward: { transform: 'translateY(-6%) scale(0.88)' },
-  left: { transform: 'translateX(8%)' },
-  right: { transform: 'translateX(-8%)' },
 }
 
 const FILTERS = [
@@ -85,19 +83,38 @@ export default function CameraFeed({ apiBase, ts, lastCmd }) {
   const [flipV, setFlipV] = useState(false)
   const [showLines, setShowLines] = useState(false)
   const [lineShift, setLineShift] = useState('none')
+  const [bend, setBend] = useState(0)
   const [imgError, setImgError] = useState(false)
   const imgRef = useRef(null)
   const edgeCanvasRef = useRef(null)
   const lineShiftTimerRef = useRef(null)
 
   useEffect(() => {
-    if (!lastCmd) return
-    const move = LINE_MOVES[lastCmd.cmd]
-    if (!move || !showLines) return
-    setLineShift(move.transform)
-    clearTimeout(lineShiftTimerRef.current)
-    lineShiftTimerRef.current = setTimeout(() => setLineShift('none'), 380)
-    return () => clearTimeout(lineShiftTimerRef.current)
+    if (!lastCmd || !showLines) return
+    const cmd = lastCmd.cmd
+    const move = LINE_MOVES[cmd]
+    if (move) {
+      setLineShift(move.transform)
+      clearTimeout(lineShiftTimerRef.current)
+      lineShiftTimerRef.current = setTimeout(() => setLineShift('none'), 380)
+      return () => clearTimeout(lineShiftTimerRef.current)
+    }
+    if (cmd !== 'left' && cmd !== 'right') return
+    // Turn: rails curve as the vanishing point sweeps opposite the turn direction
+    const target = cmd === 'left' ? 16 : -16
+    const start = performance.now()
+    let raf
+    const tick = (now) => {
+      const t = (now - start) / 1000
+      if (t >= 0.75) {
+        setBend(0)
+        return
+      }
+      setBend(target * Math.sin((t / 0.75) * Math.PI))
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
   }, [lastCmd, showLines])
 
   const frame = `${apiBase}/udp/camera/latest?ts=${ts}`
@@ -259,11 +276,11 @@ export default function CameraFeed({ apiBase, ts, lastCmd }) {
                 transition: lineShift === 'none' ? 'transform 450ms ease-out' : 'transform 120ms ease-out',
               }}
             >
-              <line x1="15" y1="98" x2="35" y2="30" stroke="white" strokeWidth="1.4" opacity="0.9" vectorEffect="non-scaling-stroke" />
-              <line x1="85" y1="98" x2="65" y2="30" stroke="white" strokeWidth="1.4" opacity="0.9" vectorEffect="non-scaling-stroke" />
-              <line x1="20.3" y1="80" x2="79.7" y2="80" stroke="#ef4444" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" />
-              <line x1="26.2" y1="60" x2="73.8" y2="60" stroke="#eab308" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" />
-              <line x1="31.5" y1="42" x2="68.5" y2="42" stroke="#22c55e" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" />
+              <path d={`M15,98 Q${15 + bend * 0.45},64 ${35 + bend},30`} stroke="white" strokeWidth="1.4" fill="none" opacity="0.9" vectorEffect="non-scaling-stroke" />
+              <path d={`M85,98 Q${85 + bend * 0.45},64 ${65 + bend},30`} stroke="white" strokeWidth="1.4" fill="none" opacity="0.9" vectorEffect="non-scaling-stroke" />
+              <line x1="20.3" y1="80" x2="79.7" y2="80" stroke="#ef4444" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.22} 50 80)`} />
+              <line x1="26.2" y1="60" x2="73.8" y2="60" stroke="#eab308" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.38} 50 60)`} />
+              <line x1="31.5" y1="42" x2="68.5" y2="42" stroke="#22c55e" strokeWidth="1" strokeDasharray="4 2.5" opacity="0.95" vectorEffect="non-scaling-stroke" transform={`rotate(${bend * 0.55} 50 42)`} />
             </g>
           </svg>
         )}
