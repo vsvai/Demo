@@ -13,6 +13,7 @@ import {
   fetchTelemetry,
   fetchTelemetrySettings,
   fetchRtkPosition,
+  parseGpsFromLogs,
   extractStatsFromLogs,
 } from './api'
 import Header from './components/Header/Header'
@@ -407,7 +408,6 @@ export default function App() {
   // RTK position polling
   useEffect(() => {
     setRtkPosition(null)
-    setGpsTrack([])
     if (!selectedRobotMac) return undefined
     let cancelled = false
     const poll = async () => {
@@ -415,19 +415,23 @@ export default function App() {
         const pos = await fetchRtkPosition(selectedRobotMac)
         if (cancelled) return
         setRtkPosition(pos)
-        if (pos.lat != null && pos.lon != null) {
-          setGpsTrack((prev) => {
-            const last = prev[prev.length - 1]
-            if (last && last.lat === pos.lat && last.lon === pos.lon) return prev
-            return [...prev, { lat: pos.lat, lon: pos.lon, alt: pos.alt, fix: pos.fix, sat: pos.sat, hdop: pos.hdop, timestamp: Date.now() }]
-          })
-        }
       } catch { /* keep last known */ }
     }
     poll()
     const id = setInterval(poll, 3000)
     return () => { cancelled = true; clearInterval(id) }
   }, [selectedRobotMac])
+
+  // Extract GPS track from logs
+  const gpsFromLogs = useMemo(() => parseGpsFromLogs(logs), [logs])
+
+  useEffect(() => {
+    setGpsTrack(gpsFromLogs.map((p) => ({
+      lat: p.lat, lon: p.lon, alt: p.alt,
+      fix: p.fix ?? 0, sat: p.sat, hdop: p.hdop,
+      timestamp: Date.now(),
+    })))
+  }, [gpsFromLogs])
 
   // Keyboard
   const flashActiveCmd = useCallback((cmd) => {

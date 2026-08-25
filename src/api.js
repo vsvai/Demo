@@ -187,6 +187,38 @@ export async function fetchRtkPosition(mac) {
   return JSON.parse(await res.text());
 }
 
+export function parseGpsFromLogs(logs) {
+  const positions = [];
+  let block = null;
+  for (const line of logs) {
+    const text = typeof line === 'string' ? line : String(line.message ?? line.text ?? JSON.stringify(line));
+    if (text.includes('ROVER POSITION')) { block = {}; continue; }
+    if (block && text.trim() === '='.repeat(40)) {
+      if (block.lat != null && block.lon != null) {
+        positions.push(block);
+      }
+      block = null;
+      continue;
+    }
+    if (block) {
+      const m = text.match(/^(\w[\w\s]*?)\s*:\s*(.+)$/);
+      if (m) {
+        const key = m[1].trim().toLowerCase();
+        const val = m[2].trim();
+        if (key === 'latitude') block.lat = parseFloat(val) || null;
+        else if (key === 'longitude') block.lon = parseFloat(val) || null;
+        else if (key === 'altitude') block.alt = parseFloat(val) || null;
+        else if (key === 'satellites') block.sat = parseInt(val, 10) || null;
+        else if (key === 'hdop') block.hdop = parseFloat(val) || null;
+        else if (key === 'fix quality') block.fix = parseInt(val, 10) ?? 0;
+        else if (key === 'rtk status') block.fixStr = val;
+        else if (key === 'mac') block.mac = val;
+      }
+    }
+  }
+  return positions;
+}
+
 // --- Log parsing ---
 
 function logBracketZoneSuffix() {
