@@ -623,12 +623,12 @@ export default function App() {
               {selectedRobotMac && <TelemetryPanel data={telemetry} lowLimit={lowLimit} />}
 
               {mapExpanded && selectedRobotMac && (
-                <div className="flex-1 min-h-0" style={{ flex: '7 0 0' }}>
+                <div className="flex-1 min-h-0" style={{ flex: '1 0 0' }}>
                   <MapPanel lastCmd={lastCmd} gpsPositions={gpsTrack} expanded={mapExpanded} onToggleExpand={() => setMapExpanded((e) => !e)} />
                 </div>
               )}
 
-              <div className={`flex gap-3 ${mapExpanded ? '' : 'flex-1 min-h-0'}`} style={mapExpanded ? { flex: '3 0 0', minHeight: 0 } : undefined}>
+              <div className={`flex gap-3 ${mapExpanded ? '' : 'flex-1 min-h-0'}`} style={mapExpanded ? { flex: '1 0 0', minHeight: 0 } : undefined}>
                 {!mapExpanded && selectedRobotMac && !cameraOpen && (
                   <div className="hidden lg:flex w-72 xl:w-80 shrink-0 min-h-0">
                     <MapPanel lastCmd={lastCmd} gpsPositions={gpsTrack} expanded={mapExpanded} onToggleExpand={() => setMapExpanded((e) => !e)} />

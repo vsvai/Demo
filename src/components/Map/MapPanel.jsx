@@ -135,8 +135,9 @@ function GpsTrackMap({ gpsPositions }) {
       zoomControl: true,
       attributionControl: false,
     })
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
+    L.tileLayer('https://server.sudoyantra.com:8000/tiles/google/satellite/{z}/{x}/{y}.png', {
+      maxZoom: 22,
+      subdomains: ['mt0','mt1','mt2','mt3'],
     }).addTo(map)
     mapInstanceRef.current = map
     layerRef.current = L.layerGroup().addTo(map)
@@ -197,7 +198,7 @@ function GpsTrackMap({ gpsPositions }) {
     }
 
     const bounds = L.latLngBounds(coords)
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 17, animate: true, duration: 0.5 })
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 20, animate: true, duration: 0.5 })
     setTimeout(() => map.invalidateSize(), 100)
   }, [gpsPositions])
 
