@@ -18,7 +18,7 @@ function CameraIcon() {
   )
 }
 
-export default function DeviceHeader({ name, mac, online, type, cameraOpen, onToggleCamera, onRename, rtkPosition }) {
+export default function DeviceHeader({ name, mac, online, type, cameraOpen, onToggleCamera, onRename, rtkPosition, rtkStatus }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(name)
   const inputRef = useRef(null)

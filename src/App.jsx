@@ -13,6 +13,7 @@ import {
   fetchTelemetry,
   fetchTelemetrySettings,
   fetchRtkPosition,
+  fetchRtkStatus,
   parseGpsFromLogs,
   extractStatsFromLogs,
 } from './api'
@@ -93,7 +94,9 @@ export default function App() {
   const [telemetry, setTelemetry] = useState(null)
   const [lowLimit, setLowLimit] = useState(null)
   const [rtkPosition, setRtkPosition] = useState(null)
+  const [rtkStatus, setRtkStatus] = useState(null)
   const [gpsTrack, setGpsTrack] = useState([])
+  const [mapExpanded, setMapExpanded] = useState(false)
 
   const refreshTimerRef = useRef(null)
   const countdownTimerRef = useRef(null)
@@ -412,7 +415,7 @@ export default function App() {
     let cancelled = false
     const poll = async () => {
       try {
-        const pos = await fetchRtkPosition(selectedRobotMac)
+        const pos = await fetchRtkPosition(apiBase)
         if (cancelled) return
         setRtkPosition(pos)
         if (pos.lat != null && pos.lon != null) {
@@ -428,6 +431,22 @@ export default function App() {
     const id = setInterval(poll, 3000)
     return () => { cancelled = true; clearInterval(id) }
   }, [selectedRobotMac])
+
+  // RTK status polling
+  useEffect(() => {
+    setRtkStatus(null)
+    let cancelled = false
+    const poll = async () => {
+      try {
+        const status = await fetchRtkStatus(apiBase)
+        if (cancelled) return
+        setRtkStatus(status)
+      } catch { /* keep last known */ }
+    }
+    poll()
+    const id = setInterval(poll, 5000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [apiBase])
 
   // Extract GPS track from logs
   const gpsFromLogs = useMemo(() => parseGpsFromLogs(logs), [logs])
@@ -583,6 +602,7 @@ export default function App() {
                 onToggleCamera={() => setCameraOpen((o) => !o)}
                 onRename={(newName) => renameDevice(selectedMac, newName, selectedType)}
                 rtkPosition={rtkPosition}
+                rtkStatus={rtkStatus}
               />
 
               {selectedRobotMac && (
@@ -601,14 +621,21 @@ export default function App() {
 
               {selectedRobotMac && <StatsPanel data={stats} />}
               {selectedRobotMac && <TelemetryPanel data={telemetry} lowLimit={lowLimit} />}
-            <div className="flex-1 min-h-0 flex gap-3">
-              <LogsPanel logs={logs} loading={loading} error={error} />
-              {selectedRobotMac && !cameraOpen && (
-                <div className="hidden lg:flex w-72 xl:w-80 shrink-0 min-h-0">
-                  <MapPanel lastCmd={lastCmd} gpsPositions={gpsTrack} />
+
+              {mapExpanded && selectedRobotMac && (
+                <div className="flex-1 min-h-0" style={{ flex: '7 0 0' }}>
+                  <MapPanel lastCmd={lastCmd} gpsPositions={gpsTrack} expanded={mapExpanded} onToggleExpand={() => setMapExpanded((e) => !e)} />
                 </div>
               )}
-            </div>
+
+              <div className={`flex gap-3 ${mapExpanded ? '' : 'flex-1 min-h-0'}`} style={mapExpanded ? { flex: '3 0 0', minHeight: 0 } : undefined}>
+                {!mapExpanded && selectedRobotMac && !cameraOpen && (
+                  <div className="hidden lg:flex w-72 xl:w-80 shrink-0 min-h-0">
+                    <MapPanel lastCmd={lastCmd} gpsPositions={gpsTrack} expanded={mapExpanded} onToggleExpand={() => setMapExpanded((e) => !e)} />
+                  </div>
+                )}
+                <LogsPanel logs={logs} loading={loading} error={error} />
+              </div>
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-text-muted">

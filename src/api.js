@@ -1,6 +1,4 @@
 const FETCH_TIMEOUT_MS = 15000;
-const isDev = typeof window !== 'undefined' && window.location.port === '5173';
-const RTK_BASE = isDev ? '/rtk' : 'http://server2.sudoyantra.com:8001';
 
 export const FIX_QUALITY = {
   0: { label: 'NO_FIX', color: '#dc2626', tw: 'bg-error text-white' },
@@ -181,10 +179,17 @@ export async function sendWifiAction(apiBase, mac, kind, seconds) {
   return text.trim() || 'OK';
 }
 
-export async function fetchRtkPosition(mac) {
-  const url = RTK_BASE + '/' + encodeURIComponent(mac) + '/log/latest';
+export async function fetchRtkPosition(apiBase) {
+  const url = (apiBase || '') + '/udp/rtk/position';
   const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error('RTK ' + res.status);
+  return JSON.parse(await res.text());
+}
+
+export async function fetchRtkStatus(apiBase) {
+  const url = (apiBase || '') + '/udp/rtk/status';
+  const res = await fetchWithTimeout(url);
+  if (!res.ok) throw new Error('RTK status ' + res.status);
   return JSON.parse(await res.text());
 }
 

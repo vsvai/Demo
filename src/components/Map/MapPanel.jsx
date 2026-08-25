@@ -5,8 +5,20 @@ import { FIX_QUALITY } from '../../api'
 const STEP = 1
 const TURN = 45
 
-function fixColor(fix) {
-  return FIX_QUALITY[fix]?.color || '#9ca3af'
+function MaximizeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+      <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+    </svg>
+  )
+}
+
+function MinimizeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+      <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" />
+    </svg>
+  )
 }
 
 function DeadReckoningMap({ lastCmd }) {
@@ -114,9 +126,11 @@ function GpsTrackMap({ gpsPositions }) {
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
   const layerRef = useRef(null)
+  const initRef = useRef(false)
 
-  const initMap = useCallback(() => {
-    if (!mapRef.current || mapInstanceRef.current) return
+  useEffect(() => {
+    if (!mapRef.current || initRef.current) return
+    initRef.current = true
     const map = L.map(mapRef.current, {
       zoomControl: true,
       attributionControl: false,
@@ -129,33 +143,33 @@ function GpsTrackMap({ gpsPositions }) {
   }, [])
 
   useEffect(() => {
-    initMap()
     return () => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove()
         mapInstanceRef.current = null
+        initRef.current = false
       }
     }
-  }, [initMap])
+  }, [])
 
   useEffect(() => {
     const map = mapInstanceRef.current
     const layer = layerRef.current
     if (!map || !layer) return
     layer.clearLayers()
-
-    if (!gpsPositions.length) return
+    if (!gpsPositions.length) { map.invalidateSize(); return }
 
     const coords = []
     gpsPositions.forEach((pos, i) => {
       const latlng = [pos.lat, pos.lon]
       coords.push(latlng)
       const fixInfo = FIX_QUALITY[pos.fix] || { label: 'UNKNOWN', color: '#9ca3af' }
+      const isLast = i === gpsPositions.length - 1
       const marker = L.circleMarker(latlng, {
-        radius: i === gpsPositions.length - 1 ? 8 : 5,
+        radius: isLast ? 9 : 5,
         fillColor: fixInfo.color,
-        color: '#fff',
-        weight: 2,
+        color: isLast ? '#000' : '#fff',
+        weight: isLast ? 3 : 2,
         opacity: 1,
         fillOpacity: 0.9,
       })
@@ -173,29 +187,34 @@ function GpsTrackMap({ gpsPositions }) {
     })
 
     if (coords.length > 1) {
-      const line = L.polyline(coords, { color: '#2563eb', weight: 2, opacity: 0.8 })
-      layer.addLayer(line)
+      layer.addLayer(L.polyline(coords, { color: '#2563eb', weight: 3, opacity: 0.85 }))
+    }
+
+    const last = coords[coords.length - 1]
+    if (last) {
+      const pulse = L.circleMarker(last, { radius: 14, fillColor: FIX_QUALITY[gpsPositions[gpsPositions.length - 1]?.fix]?.color || '#9ca3af', color: '#000', weight: 2, opacity: 0.5, fillOpacity: 0.2 })
+      layer.addLayer(pulse)
     }
 
     const bounds = L.latLngBounds(coords)
-    map.fitBounds(bounds, { padding: [30, 30], maxZoom: 17 })
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 17, animate: true, duration: 0.5 })
+    setTimeout(() => map.invalidateSize(), 100)
   }, [gpsPositions])
 
   const lastPos = gpsPositions.length > 0 ? gpsPositions[gpsPositions.length - 1] : null
 
   return (
-    <>
-      <div className="px-2">
-        {lastPos && (
-          <span className="text-[10px] font-mono text-text-muted">
-            {gpsPositions.length} pts · Fix: {FIX_QUALITY[lastPos.fix]?.label || 'UNKNOWN'}
-          </span>
-        )}
-      </div>
+    <div className="flex-1 min-h-0 flex flex-col relative">
+      {lastPos && (
+        <div className="px-3 py-1.5 flex items-center justify-between text-[10px] font-mono text-text-muted shrink-0">
+          <span>{gpsPositions.length} pts · {FIX_QUALITY[lastPos.fix]?.label || 'UNKNOWN'}</span>
+          <span className="text-accent font-bold">LIVE</span>
+        </div>
+      )}
       <div ref={mapRef} className="flex-1 min-h-0 w-full" />
       {!gpsPositions.length && (
-        <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-text-muted pointer-events-none pt-8">
-          No GPS data yet
+        <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-text-muted pointer-events-none pt-10">
+          Waiting for GPS data…
         </span>
       )}
       <div className="px-3 py-2 border-t border-border shrink-0 flex items-center justify-between text-[11px] font-mono font-bold text-text-muted">
@@ -203,36 +222,47 @@ function GpsTrackMap({ gpsPositions }) {
           <>
             <span>{lastPos.lat.toFixed(6)}, {lastPos.lon.toFixed(6)}</span>
             <span className="text-accent">{gpsPositions.length} PTS</span>
-            <span>SAT {lastPos.sat ?? '--'}</span>
+            <span>SAT {lastPos.sat ?? '--'} HDOP {lastPos.hdop?.toFixed(1) ?? '--'}</span>
           </>
         ) : (
           <span className="flex-1 text-center">Waiting for GPS…</span>
         )}
       </div>
-    </>
+    </div>
   )
 }
 
-export default function MapPanel({ lastCmd, gpsPositions = [] }) {
+export default function MapPanel({ lastCmd, gpsPositions = [], expanded, onToggleExpand }) {
   const [tab, setTab] = useState('dr')
 
   return (
-    <div className="flex-1 min-w-0 bg-white border border-border rounded-xl overflow-hidden flex flex-col">
+    <div className={`flex-1 min-w-0 bg-white border border-border rounded-xl overflow-hidden flex flex-col transition-all duration-300 ${expanded ? '' : ''}`}>
       <div className="px-3 py-2.5 border-b border-border flex items-center justify-between gap-2 shrink-0">
         <span className="text-sm font-semibold">Map</span>
-        <div className="flex items-center bg-gray-100 rounded-md p-0.5">
-          <button
-            onClick={() => setTab('dr')}
-            className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-colors ${tab === 'dr' ? 'bg-white text-text shadow-sm' : 'text-text-muted hover:text-text'}`}
-          >
-            Dead Reckoning
-          </button>
-          <button
-            onClick={() => setTab('gps')}
-            className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-colors ${tab === 'gps' ? 'bg-white text-text shadow-sm' : 'text-text-muted hover:text-text'}`}
-          >
-            GPS Track
-          </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-gray-100 rounded-md p-0.5">
+            <button
+              onClick={() => setTab('dr')}
+              className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-colors ${tab === 'dr' ? 'bg-white text-text shadow-sm' : 'text-text-muted hover:text-text'}`}
+            >
+              Dead Reckoning
+            </button>
+            <button
+              onClick={() => setTab('gps')}
+              className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-colors ${tab === 'gps' ? 'bg-white text-text shadow-sm' : 'text-text-muted hover:text-text'}`}
+            >
+              GPS Track
+            </button>
+          </div>
+          {onToggleExpand && (
+            <button
+              onClick={onToggleExpand}
+              title={expanded ? 'Shrink map' : 'Expand map (70%)'}
+              className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-gray-100 transition-colors"
+            >
+              {expanded ? <MinimizeIcon /> : <MaximizeIcon />}
+            </button>
+          )}
         </div>
       </div>
       <div className="relative flex-1 min-h-0 flex flex-col">
