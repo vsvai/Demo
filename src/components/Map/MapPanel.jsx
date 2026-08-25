@@ -135,9 +135,9 @@ function GpsTrackMap({ gpsPositions }) {
       zoomControl: true,
       attributionControl: false,
     })
-    L.tileLayer('https://server.sudoyantra.com:8000/tiles/google/satellite/{z}/{x}/{y}.png', {
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 22,
-      subdomains: ['mt0','mt1','mt2','mt3'],
+      attribution: 'Esri World Imagery',
     }).addTo(map)
     mapInstanceRef.current = map
     layerRef.current = L.layerGroup().addTo(map)
