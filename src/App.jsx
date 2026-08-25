@@ -415,6 +415,13 @@ export default function App() {
         const pos = await fetchRtkPosition(selectedRobotMac)
         if (cancelled) return
         setRtkPosition(pos)
+        if (pos.lat != null && pos.lon != null) {
+          setGpsTrack((prev) => {
+            const last = prev[prev.length - 1]
+            if (last && last.lat === pos.lat && last.lon === pos.lon) return prev
+            return [...prev, { lat: pos.lat, lon: pos.lon, alt: pos.alt, fix: pos.fix ?? 0, sat: pos.sat, hdop: pos.hdop, timestamp: Date.now() }]
+          })
+        }
       } catch { /* keep last known */ }
     }
     poll()

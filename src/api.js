@@ -1,5 +1,6 @@
 const FETCH_TIMEOUT_MS = 15000;
-const RTK_BASE = 'http://server2.sudoyantra.com:8001';
+const isDev = typeof window !== 'undefined' && window.location.port === '5173';
+const RTK_BASE = isDev ? '/rtk' : 'http://server2.sudoyantra.com:8001';
 
 export const FIX_QUALITY = {
   0: { label: 'NO_FIX', color: '#dc2626', tw: 'bg-error text-white' },
