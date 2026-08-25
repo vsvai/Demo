@@ -12,6 +12,7 @@ import {
   sendWifiAction,
   fetchTelemetry,
   fetchTelemetrySettings,
+  fetchRtkPosition,
   extractStatsFromLogs,
 } from './api'
 import Header from './components/Header/Header'
@@ -90,6 +91,8 @@ export default function App() {
   const [lastCmd, setLastCmd] = useState(null)
   const [telemetry, setTelemetry] = useState(null)
   const [lowLimit, setLowLimit] = useState(null)
+  const [rtkPosition, setRtkPosition] = useState(null)
+  const [gpsTrack, setGpsTrack] = useState([])
 
   const refreshTimerRef = useRef(null)
   const countdownTimerRef = useRef(null)
@@ -401,6 +404,31 @@ export default function App() {
     return () => { cancelled = true }
   }, [apiBase])
 
+  // RTK position polling
+  useEffect(() => {
+    setRtkPosition(null)
+    setGpsTrack([])
+    if (!selectedRobotMac) return undefined
+    let cancelled = false
+    const poll = async () => {
+      try {
+        const pos = await fetchRtkPosition(selectedRobotMac)
+        if (cancelled) return
+        setRtkPosition(pos)
+        if (pos.lat != null && pos.lon != null) {
+          setGpsTrack((prev) => {
+            const last = prev[prev.length - 1]
+            if (last && last.lat === pos.lat && last.lon === pos.lon) return prev
+            return [...prev, { lat: pos.lat, lon: pos.lon, alt: pos.alt, fix: pos.fix, sat: pos.sat, hdop: pos.hdop, timestamp: Date.now() }]
+          })
+        }
+      } catch { /* keep last known */ }
+    }
+    poll()
+    const id = setInterval(poll, 3000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [selectedRobotMac])
+
   // Keyboard
   const flashActiveCmd = useCallback((cmd) => {
     setActiveCmd(cmd)
@@ -528,7 +556,7 @@ export default function App() {
                 onClose={() => setCameraOpen(false)}
               />
               <div className="hidden md:flex w-72 xl:w-80 shrink-0" style={{ height: `${cameraSize}vh` }}>
-                <MapPanel lastCmd={lastCmd} />
+                <MapPanel lastCmd={lastCmd} gpsPositions={gpsTrack} />
               </div>
             </div>
           )}
@@ -543,6 +571,7 @@ export default function App() {
                 cameraOpen={cameraOpen}
                 onToggleCamera={() => setCameraOpen((o) => !o)}
                 onRename={(newName) => renameDevice(selectedMac, newName, selectedType)}
+                rtkPosition={rtkPosition}
               />
 
               {selectedRobotMac && (
@@ -565,7 +594,7 @@ export default function App() {
               <LogsPanel logs={logs} loading={loading} error={error} />
               {selectedRobotMac && !cameraOpen && (
                 <div className="hidden lg:flex w-72 xl:w-80 shrink-0 min-h-0">
-                  <MapPanel lastCmd={lastCmd} />
+                  <MapPanel lastCmd={lastCmd} gpsPositions={gpsTrack} />
                 </div>
               )}
             </div>

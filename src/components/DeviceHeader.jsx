@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { FIX_QUALITY } from '../api'
 
 function PencilIcon() {
   return (
@@ -17,7 +18,7 @@ function CameraIcon() {
   )
 }
 
-export default function DeviceHeader({ name, mac, online, type, cameraOpen, onToggleCamera, onRename }) {
+export default function DeviceHeader({ name, mac, online, type, cameraOpen, onToggleCamera, onRename, rtkPosition }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(name)
   const inputRef = useRef(null)
@@ -81,6 +82,13 @@ export default function DeviceHeader({ name, mac, online, type, cameraOpen, onTo
           <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-accent animate-pulse' : 'bg-offline'}`} />
           {online ? 'Online' : 'Offline'}
         </span>
+
+        {type === 'robot' && rtkPosition && (
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full ${FIX_QUALITY[rtkPosition.fix]?.tw || 'bg-gray-400 text-white'}`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
+            {FIX_QUALITY[rtkPosition.fix]?.label || 'UNKNOWN'}
+          </span>
+        )}
 
         {type === 'robot' && (
           <button

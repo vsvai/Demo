@@ -1,4 +1,13 @@
 const FETCH_TIMEOUT_MS = 15000;
+const RTK_BASE = 'http://server2.sudoyantra.com:8001';
+
+export const FIX_QUALITY = {
+  0: { label: 'NO_FIX', color: '#dc2626', tw: 'bg-error text-white' },
+  1: { label: 'GNSS', color: '#9ca3af', tw: 'bg-gray-400 text-white' },
+  2: { label: 'DGPS', color: '#2563eb', tw: 'bg-wifi text-white' },
+  4: { label: 'RTK_FIXED', color: '#16a34a', tw: 'bg-accent text-white' },
+  5: { label: 'RTK_FLOAT', color: '#d97706', tw: 'bg-warning text-white' },
+};
 
 export const DOMAINS = [
   { value: 'https://server2.sudoyantra.com', label: 'Server 2 (Default)' },
@@ -169,6 +178,13 @@ export async function sendWifiAction(apiBase, mac, kind, seconds) {
   const text = await res.text();
   if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
   return text.trim() || 'OK';
+}
+
+export async function fetchRtkPosition(mac) {
+  const url = RTK_BASE + '/' + encodeURIComponent(mac) + '/log/latest';
+  const res = await fetchWithTimeout(url);
+  if (!res.ok) throw new Error('RTK ' + res.status);
+  return JSON.parse(await res.text());
 }
 
 // --- Log parsing ---
