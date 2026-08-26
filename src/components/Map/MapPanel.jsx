@@ -135,6 +135,8 @@ function GpsTrackMap({ gpsPositions }) {
     const map = L.map(mapRef.current, {
       zoomControl: true,
       attributionControl: false,
+      center: [28.7937, 77.5058],
+      zoom: 17,
     })
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 22,
@@ -217,11 +219,6 @@ function GpsTrackMap({ gpsPositions }) {
         </div>
       )}
       <div ref={mapRef} className="flex-1 min-h-0 w-full" />
-      {!gpsPositions.length && (
-        <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-text-muted pointer-events-none pt-10">
-          Waiting for GPS data…
-        </span>
-      )}
       <div className="px-3 py-2 border-t border-border shrink-0 flex items-center justify-between text-[11px] font-mono font-bold text-text-muted">
         {lastPos ? (
           <>
