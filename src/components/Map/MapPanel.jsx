@@ -141,9 +141,9 @@ function GpsTrackMap({ gpsPositions }) {
 
     let esriFailed = false
 
-    const esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 22,
-      attribution: 'Esri World Imagery',
+    const satellite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      attribution: 'Google Satellite',
     })
 
     const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -151,14 +151,14 @@ function GpsTrackMap({ gpsPositions }) {
       attribution: 'OpenStreetMap',
     })
 
-    esri.on('tileerror', () => {
+    satellite.on('tileerror', () => {
       if (esriFailed) return
       esriFailed = true
-      map.removeLayer(esri)
+      map.removeLayer(satellite)
       osm.addTo(map)
     })
 
-    esri.addTo(map)
+    satellite.addTo(map)
 
     mapInstanceRef.current = map
     layerRef.current = L.layerGroup().addTo(map)
