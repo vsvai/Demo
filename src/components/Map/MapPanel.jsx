@@ -127,6 +127,7 @@ function GpsTrackMap({ gpsPositions }) {
   const mapInstanceRef = useRef(null)
   const layerRef = useRef(null)
   const initRef = useRef(false)
+  const fittedRef = useRef(false)
 
   useEffect(() => {
     if (!mapRef.current || initRef.current) return
@@ -149,6 +150,7 @@ function GpsTrackMap({ gpsPositions }) {
         mapInstanceRef.current.remove()
         mapInstanceRef.current = null
         initRef.current = false
+        fittedRef.current = false
       }
     }
   }, [])
@@ -158,7 +160,7 @@ function GpsTrackMap({ gpsPositions }) {
     const layer = layerRef.current
     if (!map || !layer) return
     layer.clearLayers()
-    if (!gpsPositions.length) { map.invalidateSize(); return }
+    if (!gpsPositions.length) return
 
     const coords = []
     gpsPositions.forEach((pos, i) => {
@@ -197,9 +199,11 @@ function GpsTrackMap({ gpsPositions }) {
       layer.addLayer(pulse)
     }
 
-    const bounds = L.latLngBounds(coords)
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 20, animate: true, duration: 0.5 })
-    setTimeout(() => map.invalidateSize(), 100)
+    // Only center on first point ever, never zoom after
+    if (!fittedRef.current) {
+      map.setView(last, 17)
+      fittedRef.current = true
+    }
   }, [gpsPositions])
 
   const lastPos = gpsPositions.length > 0 ? gpsPositions[gpsPositions.length - 1] : null
