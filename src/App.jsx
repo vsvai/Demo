@@ -111,6 +111,7 @@ export default function App() {
   const [rtkStatus, setRtkStatus] = useState(null)
   const [gpsTrack, setGpsTrack] = useState([])
   const [allGpsTracks, setAllGpsTracks] = useState(loadGpsTracks)
+  const gpsSeenRef = useRef(new Set())
 
   const refreshTimerRef = useRef(null)
   const countdownTimerRef = useRef(null)
@@ -426,7 +427,9 @@ export default function App() {
   useEffect(() => {
     setRtkPosition(null)
     if (!selectedRobotMac) return undefined
-    setGpsTrack(allGpsTracks[selectedRobotMac] || [])
+    const saved = allGpsTracks[selectedRobotMac] || []
+    gpsSeenRef.current = new Set(saved.map((p) => `${p.lat},${p.lon}`))
+    setGpsTrack(saved)
     let cancelled = false
     const poll = async () => {
       try {
@@ -435,8 +438,9 @@ export default function App() {
         setRtkPosition(pos)
         if (pos.lat != null && pos.lon != null) {
           setGpsTrack((prev) => {
-            const last = prev[prev.length - 1]
-            if (last && last.lat === pos.lat && last.lon === pos.lon) return prev
+            const key = pos.lat + ',' + pos.lon
+            if (gpsSeenRef.current.has(key)) return prev
+            gpsSeenRef.current.add(key)
             return [...prev, { lat: pos.lat, lon: pos.lon, alt: pos.alt, fix: pos.fix ?? 0, sat: pos.sat, hdop: pos.hdop, timestamp: Date.now() }]
           })
         }
@@ -463,15 +467,23 @@ export default function App() {
     return () => { cancelled = true; clearInterval(id) }
   }, [apiBase])
 
-  // Extract GPS track from logs
+  // Extract GPS track from logs and merge (never replace)
   const gpsFromLogs = useMemo(() => parseGpsFromLogs(logs), [logs])
 
   useEffect(() => {
-    setGpsTrack(gpsFromLogs.map((p) => ({
-      lat: p.lat, lon: p.lon, alt: p.alt,
-      fix: p.fix ?? 0, sat: p.sat, hdop: p.hdop,
-      timestamp: Date.now(),
-    })))
+    if (!gpsFromLogs.length) return
+    setGpsTrack((prev) => {
+      let merged = prev
+      for (const p of gpsFromLogs) {
+        const key = p.lat + ',' + p.lon
+        if (gpsSeenRef.current.has(key)) continue
+        gpsSeenRef.current.add(key)
+        const pt = { lat: p.lat, lon: p.lon, alt: p.alt, fix: p.fix ?? 0, sat: p.sat, hdop: p.hdop, timestamp: Date.now() }
+        merged = merged.length === prev.length ? [...prev] : merged
+        merged.push(pt)
+      }
+      return merged
+    })
   }, [gpsFromLogs])
 
   // Persist GPS track to localStorage
