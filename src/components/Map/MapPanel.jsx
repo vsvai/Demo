@@ -138,18 +138,45 @@ function GpsTrackMap({ gpsPositions }) {
       center: [28.7937, 77.5058],
       zoom: 17,
     })
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+
+    let esriFailed = false
+
+    const esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 22,
       attribution: 'Esri World Imagery',
-    }).addTo(map)
+    })
+
+    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: 'OpenStreetMap',
+    })
+
+    esri.on('tileerror', () => {
+      if (esriFailed) return
+      esriFailed = true
+      map.removeLayer(esri)
+      osm.addTo(map)
+    })
+
+    esri.addTo(map)
+
     mapInstanceRef.current = map
     layerRef.current = L.layerGroup().addTo(map)
-    setTimeout(() => map.invalidateSize(), 200)
+
+    const resize = () => map.invalidateSize()
+    window.addEventListener('resize', resize)
+    setTimeout(() => map.invalidateSize(), 500)
+    setTimeout(() => map.invalidateSize(), 1500)
+
+    map._resizeHandler = () => {
+      window.removeEventListener('resize', resize)
+    }
   }, [])
 
   useEffect(() => {
     return () => {
       if (mapInstanceRef.current) {
+        window.removeEventListener('resize', mapInstanceRef.current._resizeHandler || (() => {}))
         mapInstanceRef.current.remove()
         mapInstanceRef.current = null
         initRef.current = false
@@ -219,7 +246,7 @@ function GpsTrackMap({ gpsPositions }) {
           <span className="text-accent font-bold">LIVE</span>
         </div>
       )}
-      <div ref={mapRef} className="w-full" style={{ minHeight: '300px', flex: '1 1 0' }} />
+      <div ref={mapRef} className="w-full" style={{ height: '100%', minHeight: '300px' }} />
       <div className="px-3 py-2 border-t border-border shrink-0 flex items-center justify-between text-[11px] font-mono font-bold text-text-muted">
         {lastPos ? (
           <>
@@ -236,7 +263,7 @@ function GpsTrackMap({ gpsPositions }) {
 }
 
 export default function MapPanel({ lastCmd, gpsPositions = [], expanded, onToggleExpand, onClear, mapSize, onMapSizeChange }) {
-  const [tab, setTab] = useState('dr')
+  const [tab, setTab] = useState('gps')
 
   return (
     <div className={`flex-1 min-w-0 bg-white border border-border rounded-xl overflow-hidden flex flex-col transition-all duration-300 ${expanded ? 'h-full' : ''}`}>
