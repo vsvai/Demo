@@ -144,6 +144,7 @@ function GpsTrackMap({ gpsPositions }) {
     }).addTo(map)
     mapInstanceRef.current = map
     layerRef.current = L.layerGroup().addTo(map)
+    setTimeout(() => map.invalidateSize(), 200)
   }, [])
 
   useEffect(() => {
@@ -218,7 +219,7 @@ function GpsTrackMap({ gpsPositions }) {
           <span className="text-accent font-bold">LIVE</span>
         </div>
       )}
-      <div ref={mapRef} className="flex-1 min-h-0 w-full" />
+      <div ref={mapRef} className="w-full" style={{ minHeight: '300px', flex: '1 1 0' }} />
       <div className="px-3 py-2 border-t border-border shrink-0 flex items-center justify-between text-[11px] font-mono font-bold text-text-muted">
         {lastPos ? (
           <>
