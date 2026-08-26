@@ -34,6 +34,7 @@ const ONLINE_THRESHOLD_MS = 120000
 const UDP_STATUS_INTERVAL = 30000
 const NAMES_KEY = 'robot_dashboard_device_names'
 const SESSION_KEY = 'robot_dashboard_session'
+const GPS_TRACK_KEY = 'robot_dashboard_gps_tracks'
 
 function getInitialDomain() {
   return localStorage.getItem('selected_domain') || 'https://server2.sudoyantra.com'
@@ -44,6 +45,17 @@ function loadDeviceNames() {
     const raw = localStorage.getItem(NAMES_KEY)
     return raw ? JSON.parse(raw) : { robots: {}, wifi: {}, pinnedRobots: [], pinnedWifi: [] }
   } catch { return { robots: {}, wifi: {}, pinnedRobots: [], pinnedWifi: [] } }
+}
+
+function loadGpsTracks() {
+  try {
+    const raw = localStorage.getItem(GPS_TRACK_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch { return {} }
+}
+
+function saveGpsTracks(tracks) {
+  try { localStorage.setItem(GPS_TRACK_KEY, JSON.stringify(tracks)) } catch {}
 }
 
 function loadSession() {
@@ -86,6 +98,8 @@ export default function App() {
   const [cameraTs, setCameraTs] = useState(Date.now())
   const [cameraOpen, setCameraOpen] = useState(false)
   const [cameraSize, setCameraSize] = useState(40)
+  const [mapOpen, setMapOpen] = useState(false)
+  const [mapSize, setMapSize] = useState(50)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [deviceNames, setDeviceNames] = useState(loadDeviceNames)
   const [session, setSession] = useState(loadSession)
@@ -96,7 +110,7 @@ export default function App() {
   const [rtkPosition, setRtkPosition] = useState(null)
   const [rtkStatus, setRtkStatus] = useState(null)
   const [gpsTrack, setGpsTrack] = useState([])
-  const [mapExpanded, setMapExpanded] = useState(false)
+  const [allGpsTracks, setAllGpsTracks] = useState(loadGpsTracks)
 
   const refreshTimerRef = useRef(null)
   const countdownTimerRef = useRef(null)
@@ -412,6 +426,7 @@ export default function App() {
   useEffect(() => {
     setRtkPosition(null)
     if (!selectedRobotMac) return undefined
+    setGpsTrack(allGpsTracks[selectedRobotMac] || [])
     let cancelled = false
     const poll = async () => {
       try {
@@ -430,7 +445,7 @@ export default function App() {
     poll()
     const id = setInterval(poll, 3000)
     return () => { cancelled = true; clearInterval(id) }
-  }, [selectedRobotMac])
+  }, [selectedRobotMac, apiBase])
 
   // RTK status polling
   useEffect(() => {
@@ -458,6 +473,30 @@ export default function App() {
       timestamp: Date.now(),
     })))
   }, [gpsFromLogs])
+
+  // Persist GPS track to localStorage
+  useEffect(() => {
+    if (selectedRobotMac && gpsTrack.length > 0) {
+      setAllGpsTracks((prev) => {
+        const updated = { ...prev, [selectedRobotMac]: gpsTrack }
+        saveGpsTracks(updated)
+        return updated
+      })
+    }
+  }, [gpsTrack, selectedRobotMac])
+
+  const clearGpsTrack = useCallback(() => {
+    setGpsTrack([])
+    setRtkPosition(null)
+    if (selectedRobotMac) {
+      setAllGpsTracks((prev) => {
+        const updated = { ...prev }
+        delete updated[selectedRobotMac]
+        saveGpsTracks(updated)
+        return updated
+      })
+    }
+  }, [selectedRobotMac])
 
   // Keyboard
   const flashActiveCmd = useCallback((cmd) => {
@@ -585,9 +624,20 @@ export default function App() {
                 lastCmd={lastCmd}
                 onClose={() => setCameraOpen(false)}
               />
-              <div className="hidden md:flex w-72 xl:w-80 shrink-0" style={{ height: `${cameraSize}vh` }}>
-                <MapPanel lastCmd={lastCmd} gpsPositions={gpsTrack} />
-              </div>
+            </div>
+          )}
+
+          {selectedRobotMac && mapOpen && (
+            <div className="mb-4" style={{ height: `${mapSize}vh` }}>
+              <MapPanel
+                lastCmd={lastCmd}
+                gpsPositions={gpsTrack}
+                expanded={true}
+                onToggleExpand={() => setMapOpen(false)}
+                onClear={clearGpsTrack}
+                mapSize={mapSize}
+                onMapSizeChange={setMapSize}
+              />
             </div>
           )}
 
@@ -603,6 +653,8 @@ export default function App() {
                 onRename={(newName) => renameDevice(selectedMac, newName, selectedType)}
                 rtkPosition={rtkPosition}
                 rtkStatus={rtkStatus}
+                mapOpen={mapOpen}
+                onToggleMap={() => setMapOpen((o) => !o)}
               />
 
               {selectedRobotMac && (
@@ -622,16 +674,10 @@ export default function App() {
               {selectedRobotMac && <StatsPanel data={stats} />}
               {selectedRobotMac && <TelemetryPanel data={telemetry} lowLimit={lowLimit} />}
 
-              {mapExpanded && selectedRobotMac && (
-                <div className="flex-1 min-h-0" style={{ flex: '1 0 0' }}>
-                  <MapPanel lastCmd={lastCmd} gpsPositions={gpsTrack} expanded={mapExpanded} onToggleExpand={() => setMapExpanded((e) => !e)} />
-                </div>
-              )}
-
-              <div className={`flex gap-3 ${mapExpanded ? '' : 'flex-1 min-h-0'}`} style={mapExpanded ? { flex: '1 0 0', minHeight: 0 } : undefined}>
-                {!mapExpanded && selectedRobotMac && !cameraOpen && (
+              <div className="flex-1 min-h-0 flex gap-3">
+                {!mapOpen && selectedRobotMac && !cameraOpen && (
                   <div className="hidden lg:flex w-72 xl:w-80 shrink-0 min-h-0">
-                    <MapPanel lastCmd={lastCmd} gpsPositions={gpsTrack} expanded={mapExpanded} onToggleExpand={() => setMapExpanded((e) => !e)} />
+                    <MapPanel lastCmd={lastCmd} gpsPositions={gpsTrack} onClear={clearGpsTrack} />
                   </div>
                 )}
                 <LogsPanel logs={logs} loading={loading} error={error} />
