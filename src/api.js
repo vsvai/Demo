@@ -20,13 +20,14 @@ export const HpclRobots = {
 };
 
 function getConfig(selection) {
+  const extraMacs = ['68fe71f7e8d4']
   if (selection === 'hpcl') {
-    return { filterMacs: ['a4f00f72f340', 'b0cbd8c5fdc4'], queryParams: '?HPREG=1', title: 'HPREG Setup', apiBase: 'https://server2.sudoyantra.com' };
+    return { filterMacs: ['a4f00f72f340', 'b0cbd8c5fdc4'], extraMacs, queryParams: '?HPREG=1', title: 'HPREG Setup', apiBase: 'https://server2.sudoyantra.com' };
   }
   if (selection === 'carbantis') {
-    return { filterMacs: ['ECE334197698'], queryParams: '?CARBANTIS=1', title: 'Robot Dashboard', apiBase: 'https://server2.sudoyantra.com' };
+    return { filterMacs: ['ECE334197698'], extraMacs, queryParams: '?CARBANTIS=1', title: 'Robot Dashboard', apiBase: 'https://server2.sudoyantra.com' };
   }
-  return { filterMacs: [], queryParams: '', title: 'Robot Dashboard', apiBase: selection };
+  return { filterMacs: [], extraMacs, queryParams: '', title: 'Robot Dashboard', apiBase: selection };
 }
 
 export function getDomainConfig(selection) {

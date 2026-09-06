@@ -32,6 +32,7 @@ import PasscodeGate from './components/PasscodeGate'
 const REFRESH_MS = 10000
 const ONLINE_THRESHOLD_MS = 120000
 const UDP_STATUS_INTERVAL = 30000
+const CONSTANT_INTERVAL_MS = 30000
 const NAMES_KEY = 'robot_dashboard_device_names'
 const SESSION_KEY = 'robot_dashboard_session'
 const GPS_TRACK_KEY = 'robot_dashboard_gps_tracks'
@@ -104,6 +105,7 @@ export default function App() {
   const [deviceNames, setDeviceNames] = useState(loadDeviceNames)
   const [session, setSession] = useState(loadSession)
   const [activeCmd, setActiveCmd] = useState(null)
+  const [runConstantly, setRunConstantly] = useState(false)
   const [lastCmd, setLastCmd] = useState(null)
   const [telemetry, setTelemetry] = useState(null)
   const [lowLimit, setLowLimit] = useState(null)
@@ -121,6 +123,7 @@ export default function App() {
   const loadLogsRef = useRef(null)
   const robotCmdRef = useRef(null)
   const activeCmdTimerRef = useRef(null)
+  const runConstantlyRef = useRef(null)
 
   const config = useMemo(() => getDomainConfig(domain), [domain])
   const apiBase = config.apiBase
@@ -228,6 +231,9 @@ export default function App() {
       if (config.filterMacs.length > 0) {
         unique = unique.filter((mac) => config.filterMacs.some((f) => f.toLowerCase() === mac.toLowerCase()))
       }
+      if (config.extraMacs && config.extraMacs.length > 0) {
+        unique = [...unique, ...config.extraMacs.filter((m) => !unique.some((u) => u.toLowerCase() === m.toLowerCase()))]
+      }
       setRobots(unique)
       setRobotStatus((prev) => {
         const now = Date.now()
@@ -299,6 +305,11 @@ export default function App() {
   }, [session])
 
   const resetSelection = useCallback(() => {
+    if (runConstantlyRef.current) {
+      clearInterval(runConstantlyRef.current)
+      runConstantlyRef.current = null
+    }
+    setRunConstantly(false)
     setSelectedRobotMac(null)
     setSelectedWifiMac(null)
     setLogs([])
@@ -554,7 +565,32 @@ export default function App() {
 
   robotCmdRef.current = handleRobotCommand
 
+  const stopConstantly = useCallback(() => {
+    if (runConstantlyRef.current) {
+      clearInterval(runConstantlyRef.current)
+      runConstantlyRef.current = null
+    }
+    setRunConstantly(false)
+  }, [])
+
+  const handleRunConstantly = useCallback(async () => {
+    if (!selectedRobotMac) return
+    if (runConstantlyRef.current) return
+    try {
+      const msg = await sendRobotCommand(apiBase, selectedRobotMac, 'go_backward')
+      handleFeedback(setControlFeedback, feedbackTimerRef, msg || 'OK', false)
+    } catch (e) {
+      handleFeedback(setControlFeedback, feedbackTimerRef, e.message || 'Failed', true)
+      return
+    }
+    runConstantlyRef.current = setInterval(() => {
+      sendRobotCommand(apiBase, selectedRobotMac, 'go_backward').catch(() => {})
+    }, CONSTANT_INTERVAL_MS)
+    setRunConstantly(true)
+  }, [selectedRobotMac, apiBase, handleFeedback])
+
   const handleStop = useCallback(async () => {
+    stopConstantly()
     if (!selectedRobotMac) return
     try {
       const msg = await sendRobotStop(apiBase, selectedRobotMac)
@@ -562,7 +598,7 @@ export default function App() {
     } catch (e) {
       handleFeedback(setControlFeedback, feedbackTimerRef, e.message || 'Failed', true)
     }
-  }, [selectedRobotMac, apiBase, handleFeedback])
+  }, [selectedRobotMac, apiBase, handleFeedback, stopConstantly])
 
   const handleOta = useCallback(async () => {
     if (!selectedRobotMac) return
@@ -674,6 +710,9 @@ export default function App() {
                   onCommand={(cmd) => { handleRobotCommand(cmd); flashActiveCmd(cmd) }}
                   onStop={handleStop}
                   onOta={handleOta}
+                  onRunConstantly={handleRunConstantly}
+                  onStopConstantly={stopConstantly}
+                  runConstantly={runConstantly}
                   feedback={controlFeedback}
                   activeCmd={activeCmd}
                 />

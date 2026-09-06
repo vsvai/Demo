@@ -9,7 +9,7 @@ const DIRS = [
 
 const REPEAT_MS = 250
 
-export default function RobotControls({ onCommand, onStop, onOta, feedback, activeCmd }) {
+export default function RobotControls({ onCommand, onStop, onOta, onRunConstantly, onStopConstantly, runConstantly, feedback, activeCmd }) {
   const [held, setHeld] = useState(null)
   const repeatRef = useRef(null)
 
@@ -31,6 +31,15 @@ export default function RobotControls({ onCommand, onStop, onOta, feedback, acti
       <button onClick={onStop} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-error text-error hover:bg-error-light transition-colors min-h-11">
         Stop
       </button>
+      {runConstantly ? (
+        <button onClick={onStopConstantly} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-error bg-error text-white hover:bg-error-light transition-colors min-h-11 animate-pulse">
+          Stop Run Constantly
+        </button>
+      ) : (
+        <button onClick={onRunConstantly} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-wifi text-wifi hover:bg-wifi-light transition-colors min-h-11">
+          Run Constantly
+        </button>
+      )}
       <button onClick={() => onCommand('go_forward')} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-wifi text-wifi hover:bg-wifi-light transition-colors min-h-11">
         Go Forward
       </button>
