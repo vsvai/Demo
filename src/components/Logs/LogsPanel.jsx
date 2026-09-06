@@ -8,7 +8,7 @@ export default function LogsPanel({ logs, loading, error }) {
         {loading && <div className="py-6 text-center text-text-muted">Loading…</div>}
         {!loading && error && <div className="py-6 text-center text-error">{error}</div>}
         {!loading && !error && logs.length === 0 && (
-          <div className="py-6 text-center text-text-muted">Select a device</div>
+          <div className="py-6 text-center text-text-muted">No logs available</div>
         )}
         {!loading && !error && logs.map((line, i) => (
           <LogLine key={i} line={line} />

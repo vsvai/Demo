@@ -90,6 +90,10 @@ export async function fetchWifiMacsList(apiBase) {
   return list.map((r) => (typeof r === 'string' ? r : r.mac ?? r.id ?? r)).filter(Boolean);
 }
 
+function isLogNotFound(text) {
+  return /error:\s*log file.*not found/i.test(text);
+}
+
 export async function fetchLogs(apiBase, mac) {
   const viewPath = '/view/' + encodeURIComponent(mac);
   const logPath = '/' + encodeURIComponent(mac) + '/log';
@@ -100,6 +104,7 @@ export async function fetchLogs(apiBase, mac) {
     text = await res.text();
   }
   if (!res.ok) throw new Error('Logs: ' + res.status);
+  if (isLogNotFound(text)) return { logs: [] };
   return parseJsonOrText(text);
 }
 
@@ -113,6 +118,7 @@ export async function fetchWifiLogs(apiBase, mac) {
     text = await res.text();
   }
   if (!res.ok) throw new Error('Wi‑Fi logs: ' + res.status);
+  if (isLogNotFound(text)) return { logs: [] };
   return parseJsonOrText(text);
 }
 
