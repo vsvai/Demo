@@ -146,7 +146,7 @@ export async function sendRobotStop(apiBase, mac) {
 }
 
 export async function triggerOta(apiBase, mac) {
-  const url = apiBase + '/udp/start/' + encodeURIComponent(mac) + '/set/ota';
+  const url = apiBase + '/udp/ota/' + encodeURIComponent(mac) + '/set';
   const res = await fetchWithTimeout(url);
   const text = await res.text();
   if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
