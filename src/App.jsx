@@ -726,11 +726,6 @@ export default function App() {
               {selectedRobotMac && <TelemetryPanel data={telemetry} lowLimit={lowLimit} />}
 
               <div className="flex-1 min-h-0 flex gap-3">
-                {!mapOpen && selectedRobotMac && !cameraOpen && (
-                  <div className="hidden lg:flex w-72 xl:w-80 shrink-0 min-h-0">
-                    <MapPanel lastCmd={lastCmd} gpsPositions={gpsTrack} onClear={clearGpsTrack} />
-                  </div>
-                )}
                 <LogsPanel logs={logs} loading={loading} error={error} />
               </div>
             </>
