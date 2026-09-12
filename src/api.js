@@ -1,5 +1,7 @@
 const FETCH_TIMEOUT_MS = 15000;
 
+export const PEAK_V_PER_A = 0.185;
+
 export const FIX_QUALITY = {
   0: { label: 'NO_FIX', color: '#dc2626', tw: 'bg-error text-white' },
   1: { label: 'GNSS', color: '#9ca3af', tw: 'bg-gray-400 text-white' },
@@ -322,8 +324,8 @@ export function parseLogLine(line) {
 function formatPeak(v) {
   const n = Number(v);
   if (!Number.isFinite(n)) return '--';
-  if (Math.abs(n) < 0.05) return '0.0V';
-  return n.toFixed(1) + 'V';
+  if (Math.abs(n) < 0.05) return '0.0A';
+  return (n / PEAK_V_PER_A).toFixed(1) + 'A';
 }
 
 export function extractStatsFromLogs(logLines) {
