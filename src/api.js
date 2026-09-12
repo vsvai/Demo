@@ -1,6 +1,6 @@
 const FETCH_TIMEOUT_MS = 15000;
 
-export const PEAK_V_PER_A = 0.185;
+export const PEAK_V_PER_A = 0.1;
 
 export const FIX_QUALITY = {
   0: { label: 'NO_FIX', color: '#dc2626', tw: 'bg-error text-white' },
