@@ -324,8 +324,8 @@ export function parseLogLine(line) {
 function formatPeak(v) {
   const n = Number(v);
   if (!Number.isFinite(n)) return '--';
-  if (Math.abs(n) < 0.05) return '0.0A';
-  return (n / PEAK_V_PER_A).toFixed(1) + 'A';
+  if (Math.abs(n) < 0.05) return { amps: '0.0A', volts: '0.0V' };
+  return { amps: (n / PEAK_V_PER_A).toFixed(1) + 'A', volts: n.toFixed(1) + 'V' };
 }
 
 export function extractStatsFromLogs(logLines) {
