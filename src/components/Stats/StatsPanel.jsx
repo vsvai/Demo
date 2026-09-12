@@ -3,6 +3,9 @@ const stats = [
   { key: 'lastRunTime', label: 'Last Run Cmd' },
   { key: 'lastBat', label: 'Battery (ADS)' },
   { key: 'lastVer', label: 'Version' },
+  { key: 'peakBrush', label: 'Peak Brush' },
+  { key: 'peakLeft', label: 'Peak Left' },
+  { key: 'peakBottom', label: 'Peak Bottom' },
 ]
 
 export default function StatsPanel({ data }) {

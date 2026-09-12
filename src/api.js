@@ -319,11 +319,21 @@ export function parseLogLine(line) {
   return { date: parsed, body, raw: rawTime !== '' && rawTime != null ? String(rawTime) : '' };
 }
 
+function formatPeak(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '--';
+  if (Math.abs(n) < 0.05) return '0.0V';
+  return n.toFixed(1) + 'V';
+}
+
 export function extractStatsFromLogs(logLines) {
   let totalRuns = 0;
   let lastRunTime = 'None';
   let lastBat = '--';
   let lastVer = '--';
+  let peakBrush = '--';
+  let peakLeft = '--';
+  let peakBottom = '--';
 
   for (const line of logLines) {
     const text = typeof line === 'string' ? line : String(line.message ?? line.text ?? JSON.stringify(line));
@@ -338,7 +348,13 @@ export function extractStatsFromLogs(logLines) {
     if (adsMatch) lastBat = adsMatch[1] + 'V';
     const verMatch = text.match(/Ver:\s*(\d+)/i);
     if (verMatch) lastVer = 'v' + verMatch[1];
+    const brushMatch = text.match(/Peak Brush:\s*(-?[\d.]+)/i);
+    if (brushMatch) peakBrush = formatPeak(brushMatch[1]);
+    const leftMatch = text.match(/Peak Left:\s*(-?[\d.]+)/i);
+    if (leftMatch) peakLeft = formatPeak(leftMatch[1]);
+    const bottomMatch = text.match(/Peak Bottom:\s*(-?[\d.]+)/i);
+    if (bottomMatch) peakBottom = formatPeak(bottomMatch[1]);
   }
 
-  return { totalRuns, lastRunTime, lastBat, lastVer };
+  return { totalRuns, lastRunTime, lastBat, lastVer, peakBrush, peakLeft, peakBottom };
 }
