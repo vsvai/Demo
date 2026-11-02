@@ -703,6 +703,7 @@ export default function App() {
                 rtkStatus={rtkStatus}
                 mapOpen={mapOpen}
                 onToggleMap={() => setMapOpen((o) => !o)}
+                stats={stats}
               />
 
               {selectedRobotMac && (

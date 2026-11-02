@@ -5,6 +5,7 @@ export const PASSCODE_ORG = {
     { code: '2023', domain: 'https://server2.sudoyantra.com', label: 'Admin' },
     { code: '2100', domain: 'hpcl', label: 'HPCL Delhi' },
     { code: '1234', domain: 'carbantis', label: 'Carbantis' },
+    { code: '3001', domain: 'quant1', label: 'Quant1' },
   ],
 }
 

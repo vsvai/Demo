@@ -32,6 +32,7 @@ export default function Header({ domain, onDomainChange, countdown, title, onExp
             <option value="https://server2.sudoyantra.com">Server 2 (Default)</option>
             <option value="hpcl">HPCL Delhi </option>
             <option value="carbantis">Carbantis</option>
+            <option value="quant1">Quant1</option>
           </select>
         )}
         <button onClick={onExport} className="px-2 py-1 text-xs font-medium border border-border rounded-md bg-white hover:bg-gray-50 transition-colors" title="Export device names">

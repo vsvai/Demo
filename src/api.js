@@ -14,6 +14,7 @@ export const DOMAINS = [
   { value: 'https://server2.sudoyantra.com', label: 'Server 2 (Default)' },
   { value: 'hpcl', label: 'HPCL Robot (a4f00f72f340)' },
   { value: 'carbantis', label: 'Carbantis' },
+  { value: 'quant1', label: 'Quant1 (3076f5b92718)' },
 ];
 
 export const HpclRobots = {
@@ -28,6 +29,9 @@ function getConfig(selection) {
   }
   if (selection === 'carbantis') {
     return { filterMacs: ['ECE334197698'], extraMacs, queryParams: '?CARBANTIS=1', title: 'Robot Dashboard', apiBase: 'https://server2.sudoyantra.com' };
+  }
+  if (selection === 'quant1') {
+    return { filterMacs: ['3076f5b92718'], extraMacs, queryParams: '?QUANT1=1', title: 'Quant1 Setup', apiBase: 'https://server2.sudoyantra.com' };
   }
   return { filterMacs: [], extraMacs, queryParams: '', title: 'Robot Dashboard', apiBase: selection };
 }
@@ -336,6 +340,10 @@ export function extractStatsFromLogs(logLines) {
   let peakBrush = '--';
   let peakLeft = '--';
   let peakBottom = '--';
+  let tlmBat = null;
+  let tlmA1 = null;
+  let tlmA2 = null;
+  let tlmA3 = null;
 
   for (const line of logLines) {
     const text = typeof line === 'string' ? line : String(line.message ?? line.text ?? JSON.stringify(line));
@@ -356,7 +364,15 @@ export function extractStatsFromLogs(logLines) {
     if (leftMatch) peakLeft = formatPeak(leftMatch[1]);
     const bottomMatch = text.match(/Peak Bottom:\s*(-?[\d.]+)/i);
     if (bottomMatch) peakBottom = formatPeak(bottomMatch[1]);
+    const batMatch = text.match(/\bB:\s*(-?[\d.]+)/i);
+    if (batMatch) { tlmBat = Number(batMatch[1]); lastBat = batMatch[1] + 'V'; }
+    const a1Match = text.match(/\bA1:\s*(-?[\d.]+)/i);
+    if (a1Match) tlmA1 = Number(a1Match[1]);
+    const a2Match = text.match(/\bA2:\s*(-?[\d.]+)/i);
+    if (a2Match) tlmA2 = Number(a2Match[1]);
+    const a3Match = text.match(/\bA3:\s*(-?[\d.]+)/i);
+    if (a3Match) tlmA3 = Number(a3Match[1]);
   }
 
-  return { totalRuns, lastRunTime, lastBat, lastVer, peakBrush, peakLeft, peakBottom };
+  return { totalRuns, lastRunTime, lastBat, lastVer, peakBrush, peakLeft, peakBottom, tlmBat, tlmA1, tlmA2, tlmA3 };
 }

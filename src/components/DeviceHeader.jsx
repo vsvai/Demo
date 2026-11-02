@@ -28,7 +28,7 @@ function MapIcon() {
   )
 }
 
-export default function DeviceHeader({ name, mac, online, type, cameraOpen, onToggleCamera, onRename, rtkPosition, rtkStatus, mapOpen, onToggleMap }) {
+export default function DeviceHeader({ name, mac, online, type, cameraOpen, onToggleCamera, onRename, rtkPosition, rtkStatus, mapOpen, onToggleMap, stats }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(name)
   const inputRef = useRef(null)
@@ -92,6 +92,31 @@ export default function DeviceHeader({ name, mac, online, type, cameraOpen, onTo
           <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-accent animate-pulse' : 'bg-offline'}`} />
           {online ? 'Online' : 'Offline'}
         </span>
+
+        {type === 'robot' && stats?.tlmBat != null && (
+          <span
+            title="Battery voltage (TLM)"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border border-accent/30 bg-accent-light text-accent-hover"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+            <span className="font-mono">{Number(stats.tlmBat).toFixed(1)}V</span>
+          </span>
+        )}
+
+        {type === 'robot' && [stats?.tlmA1, stats?.tlmA2, stats?.tlmA3].some((v) => v != null) && (
+          <span
+            title="Current sensing (A1 / A2 / A3)"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border border-wifi/30 bg-blue-50 text-wifi"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-wifi" />
+            <span className="font-mono">
+              {[stats?.tlmA1, stats?.tlmA2, stats?.tlmA3]
+                .map((v) => (v != null ? Number(v).toFixed(2) : '--'))
+                .join(' / ')}
+              A
+            </span>
+          </span>
+        )}
 
         {type === 'robot' && rtkPosition && (
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full ${FIX_QUALITY[rtkPosition.fix]?.tw || 'bg-gray-400 text-white'}`}>
