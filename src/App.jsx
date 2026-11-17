@@ -130,6 +130,8 @@ export default function App() {
   const wifiFeedbackTimerRef = useRef(null)
   const refreshRef = useRef(null)
   const loadLogsRef = useRef(null)
+  const logRefreshTimerRef = useRef(null)
+  const lastLogRefreshRef = useRef(0)
   const robotCmdRef = useRef(null)
   const activeCmdTimerRef = useRef(null)
   const runConstantlyRef = useRef(null)
@@ -390,6 +392,18 @@ export default function App() {
     else if (selectedWifiMac) loadLogsRef.current(selectedWifiMac, 'wifi')
   }, [selectedRobotMac, selectedWifiMac])
 
+  const scheduleLogRefresh = useCallback(() => {
+    if (logRefreshTimerRef.current) return
+    const wait = Math.max(0, 5000 - (Date.now() - lastLogRefreshRef.current))
+    logRefreshTimerRef.current = setTimeout(() => {
+      logRefreshTimerRef.current = null
+      lastLogRefreshRef.current = Date.now()
+      refreshLogs()
+    }, wait)
+  }, [refreshLogs])
+
+  useEffect(() => () => clearTimeout(logRefreshTimerRef.current), [])
+
   // Camera refresh
   useEffect(() => {
     if (!selectedRobotMac) return
@@ -549,8 +563,8 @@ export default function App() {
     } catch (e) {
       handleFeedback(setControlFeedback, feedbackTimerRef, e.message || 'Failed', true)
     }
-    refreshLogs()
-  }, [selectedRobotMac, apiBase, handleFeedback, refreshLogs])
+    scheduleLogRefresh()
+  }, [selectedRobotMac, apiBase, handleFeedback, scheduleLogRefresh])
 
   robotCmdRef.current = handleRobotCommand
 
@@ -572,12 +586,12 @@ export default function App() {
       handleFeedback(setControlFeedback, feedbackTimerRef, e.message || 'Failed', true)
       return
     }
-    refreshLogs()
+    scheduleLogRefresh()
     runConstantlyRef.current = setInterval(() => {
-      sendRobotCommand(apiBase, selectedRobotMac, 'go_backward').then(refreshLogs).catch(() => {})
+      sendRobotCommand(apiBase, selectedRobotMac, 'go_backward').then(scheduleLogRefresh).catch(() => {})
     }, CONSTANT_INTERVAL_MS)
     setRunConstantly(true)
-  }, [selectedRobotMac, apiBase, handleFeedback, refreshLogs])
+  }, [selectedRobotMac, apiBase, handleFeedback, scheduleLogRefresh])
 
   const handleStop = useCallback(async () => {
     stopConstantly()
@@ -588,8 +602,8 @@ export default function App() {
     } catch (e) {
       handleFeedback(setControlFeedback, feedbackTimerRef, e.message || 'Failed', true)
     }
-    refreshLogs()
-  }, [selectedRobotMac, apiBase, handleFeedback, stopConstantly, refreshLogs])
+    scheduleLogRefresh()
+  }, [selectedRobotMac, apiBase, handleFeedback, stopConstantly, scheduleLogRefresh])
 
   const handleOta = useCallback(async () => {
     if (!selectedRobotMac) return
@@ -599,8 +613,8 @@ export default function App() {
     } catch (e) {
       handleFeedback(setControlFeedback, feedbackTimerRef, e.message || 'Failed', true)
     }
-    refreshLogs()
-  }, [selectedRobotMac, apiBase, handleFeedback, refreshLogs])
+    scheduleLogRefresh()
+  }, [selectedRobotMac, apiBase, handleFeedback, scheduleLogRefresh])
 
   const handleWifiAction = useCallback(async (kind) => {
     if (!selectedWifiMac) return

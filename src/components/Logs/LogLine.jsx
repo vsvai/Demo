@@ -9,20 +9,26 @@ export function getLogLevel(line) {
   return 'info'
 }
 
-const LEVEL_STYLES = {
-  error: 'text-error bg-error-light border-l-error',
-  warn: 'text-warning bg-warning-light border-l-warning',
-  gps: 'text-wifi bg-wifi-light border-l-wifi',
-  run: 'text-accent-hover bg-accent-light border-l-accent',
-  info: 'text-text border-l-border',
+const LEVEL_CHIPS = {
+  error: 'bg-error text-white',
+  warn: 'bg-warning text-white',
+  gps: 'bg-wifi text-white',
+  run: 'bg-accent text-white',
+  info: '',
 };
 
 export default function LogLine({ line }) {
   const parsed = parseLogLine(line)
+  const level = getLogLevel(line)
   const tag = parsed.date ? formatGmtIstTags(parsed.date).ist : parsed.raw
 
   return (
-    <div className={`py-1 px-1.5 border-b border-black/5 border-l-2 last:border-b-0 break-words text-[13px] leading-relaxed font-mono ${LEVEL_STYLES[getLogLevel(line)]}`}>
+    <div className="py-1 px-1.5 border-b border-black/5 last:border-0 break-words text-[13px] leading-relaxed font-mono text-text">
+      {level !== 'info' && (
+        <span className={`inline-flex items-center mr-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${LEVEL_CHIPS[level]}`}>
+          {level}
+        </span>
+      )}
       {tag && (
         <span className="inline-flex items-center mr-1.5 px-1.5 py-0.5 rounded border border-green-200 bg-green-50 text-[11px] font-semibold text-green-700 whitespace-nowrap align-middle">
           {tag}

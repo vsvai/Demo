@@ -14,26 +14,9 @@ function fmtTs(ts) {
 }
 
 export default function TelemetryPanel({ data, lowLimit }) {
-  const state = String(data?.state || 'unknown').toLowerCase()
-  const lamp = data?.status_lamp || 'UNKNOWN'
   const battery = Number.isFinite(data?.battery_v) ? data.battery_v : null
   const pct = battPercent(battery)
   const low = battery != null && lowLimit != null && battery <= lowLimit
-
-  const stateStyle =
-    state === 'moving'
-      ? { cls: 'bg-blue-50 text-blue-600 border-blue-200', dot: 'bg-blue-500 animate-pulse' }
-      : state === 'error' || state === 'fault'
-        ? { cls: 'bg-error-light text-error border-red-200', dot: 'bg-error animate-pulse' }
-        : { cls: 'bg-gray-100 text-gray-600 border-gray-200', dot: 'bg-gray-400' }
-
-  const lampStyle = {
-    RUNNING: 'bg-accent-light text-accent-hover border-green-200',
-    STOPPED: 'bg-gray-100 text-gray-600 border-gray-200',
-    LOW_BATTERY: 'bg-warning-light text-warning border-amber-200',
-    FAULT: 'bg-error-light text-error border-red-200',
-    UNKNOWN: 'bg-gray-100 text-gray-400 border-gray-200',
-  }[lamp] || 'bg-gray-100 text-gray-400 border-gray-200'
 
   const barColor = low ? 'bg-error' : pct > 50 ? 'bg-accent' : pct > 20 ? 'bg-warning' : 'bg-error'
 
@@ -54,18 +37,6 @@ export default function TelemetryPanel({ data, lowLimit }) {
         <div className="mt-1.5 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
           <div className={`h-full rounded-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
         </div>
-      </div>
-
-      {/* State + Lamp */}
-      <div className="bg-white border border-border rounded-lg p-3 shadow-sm flex flex-col justify-center items-start gap-1.5 min-h-20">
-        <span className="text-[11px] font-bold uppercase tracking-wide text-text-muted">State / Lamp</span>
-        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-xs font-bold capitalize ${stateStyle.cls}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${stateStyle.dot}`} />
-          {state}
-        </span>
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-mono font-bold ${lampStyle}`}>
-          {lamp.replace('_', ' ')}
-        </span>
       </div>
 
       {/* Runs */}
