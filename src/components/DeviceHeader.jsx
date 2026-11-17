@@ -28,7 +28,7 @@ function MapIcon() {
   )
 }
 
-export default function DeviceHeader({ name, mac, online, type, cameraOpen, onToggleCamera, onRename, rtkPosition, rtkStatus, mapOpen, onToggleMap, stats }) {
+export default function DeviceHeader({ name, mac, online, type, cameraOpen, onToggleCamera, onRename, rtkPosition, rtkStatus, mapOpen, onToggleMap, stats, features = {} }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(name)
   const inputRef = useRef(null)
@@ -125,26 +125,30 @@ export default function DeviceHeader({ name, mac, online, type, cameraOpen, onTo
           </span>
         )}
 
-        {type === 'robot' && (
+        {type === 'robot' && (features.map !== false || features.camera !== false) && (
           <>
-            <button
-              onClick={onToggleMap}
-              aria-pressed={mapOpen}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors
-                ${mapOpen ? 'bg-wifi text-white border-wifi' : 'bg-white text-text border-border hover:bg-gray-50'}`}
-            >
-              <MapIcon />
-              {mapOpen ? 'Hide Map' : 'Map'}
-            </button>
-            <button
-              onClick={onToggleCamera}
-              aria-pressed={cameraOpen}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors
-                ${cameraOpen ? 'bg-accent text-white border-accent' : 'bg-white text-text border-border hover:bg-gray-50'}`}
-            >
-              <CameraIcon />
-              {cameraOpen ? 'Hide Camera' : 'Camera'}
-            </button>
+            {features.map !== false && (
+              <button
+                onClick={onToggleMap}
+                aria-pressed={mapOpen}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors
+                  ${mapOpen ? 'bg-wifi text-white border-wifi' : 'bg-white text-text border-border hover:bg-gray-50'}`}
+              >
+                <MapIcon />
+                {mapOpen ? 'Hide Map' : 'Map'}
+              </button>
+            )}
+            {features.camera !== false && (
+              <button
+                onClick={onToggleCamera}
+                aria-pressed={cameraOpen}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors
+                  ${cameraOpen ? 'bg-accent text-white border-accent' : 'bg-white text-text border-border hover:bg-gray-50'}`}
+              >
+                <CameraIcon />
+                {cameraOpen ? 'Hide Camera' : 'Camera'}
+              </button>
+            )}
           </>
         )}
       </div>

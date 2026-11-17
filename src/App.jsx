@@ -140,6 +140,7 @@ export default function App() {
   const config = useMemo(() => getDomainConfig(domain), [domain])
   const apiBase = config.apiBase
   const title = config.title
+  const features = config.features
   const stats = useMemo(() => extractStatsFromLogs(logs), [logs])
 
   const getDeviceName = useCallback((mac, index, type) => {
@@ -219,6 +220,11 @@ export default function App() {
 
   const handleDomainChange = useCallback((val) => {
     localStorage.setItem('selected_domain', val)
+    if (runConstantlyRef.current) {
+      clearInterval(runConstantlyRef.current)
+      runConstantlyRef.current = null
+    }
+    setRunConstantly(false)
     setDomain(val)
     setSelectedRobotMac(null)
     setSelectedWifiMac(null)
@@ -334,6 +340,7 @@ export default function App() {
     setRobotStatus({})
     setWifiStatus({})
     setCameraOpen(false)
+    setMapOpen(false)
     setCameraTs(Date.now())
   }, [])
 
@@ -562,6 +569,7 @@ export default function App() {
 
   useEffect(() => {
     const handleKey = (e) => {
+      if (features?.wasd === false) return
       const mac = selectedRobotMac
       if (!mac) return
       const key = e.key.toLowerCase()
@@ -573,7 +581,7 @@ export default function App() {
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [selectedRobotMac, flashActiveCmd])
+  }, [selectedRobotMac, flashActiveCmd, features])
 
   const selectRobot = useCallback((mac) => { setSelectedRobotMac(mac); setSelectedWifiMac(null) }, [])
   const selectWifi = useCallback((mac) => { setSelectedWifiMac(mac); setSelectedRobotMac(null) }, [])
@@ -700,7 +708,7 @@ export default function App() {
         />
 
         <section className="flex-1 flex flex-col min-w-0 min-h-0 p-3 md:p-4">
-          {selectedRobotMac && cameraOpen && (
+          {selectedRobotMac && cameraOpen && features?.camera !== false && (
             <div className="flex gap-3 mb-4">
               <CameraPanel
                 apiBase={apiBase}
@@ -714,7 +722,7 @@ export default function App() {
             </div>
           )}
 
-          {selectedRobotMac && mapOpen && (
+          {selectedRobotMac && mapOpen && features?.map !== false && (
             <div className="mb-4" style={{ height: `${mapSize}vh` }}>
               <MapPanel
                 lastCmd={lastCmd}
@@ -743,6 +751,7 @@ export default function App() {
                 mapOpen={mapOpen}
                 onToggleMap={() => setMapOpen((o) => !o)}
                 stats={stats}
+                features={features}
               />
 
               {selectedRobotMac && (
@@ -755,6 +764,7 @@ export default function App() {
                   runConstantly={runConstantly}
                   feedback={controlFeedback}
                   activeCmd={activeCmd}
+                  features={features}
                 />
               )}
 

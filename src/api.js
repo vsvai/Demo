@@ -18,6 +18,21 @@ export const DOMAINS = [
   { value: 'testing', label: 'Testing (HPCL Robots)' },
 ];
 
+export const DEFAULT_FEATURES = {
+  stop: true,
+  runConstantly: true,
+  goForward: true,
+  goBackward: true,
+  ota: true,
+  wasd: true,
+  camera: true,
+  map: true,
+};
+
+function makeFeatures(overrides = {}) {
+  return { ...DEFAULT_FEATURES, ...overrides };
+}
+
 const HPCL_ROBOTS = [
   { mac: '2805a57027b0', name: 'Auchandi HPREG1' },
   { mac: 'b4bfe90a8a64', name: 'Qutabgarh HPREG2' },
@@ -40,18 +55,18 @@ const TESTING_ROBOTS = [
 function getConfig(selection) {
   const extraMacs = ['68fe71f7e8d4']
   if (selection === 'hpcl') {
-    return { filterMacs: HPCL_ROBOTS, extraMacs: [], queryParams: '?HPREG=1', title: 'HPREG Setup', apiBase: 'https://server2.sudoyantra.com' };
+    return { filterMacs: HPCL_ROBOTS, extraMacs: [], queryParams: '?HPREG=1', title: 'HPREG Setup', apiBase: 'https://server2.sudoyantra.com', features: makeFeatures({ runConstantly: false }) };
   }
   if (selection === 'carbantis') {
-    return { filterMacs: CARBANTIS_ROBOTS, extraMacs, queryParams: '?CARBANTIS=1', title: 'Robot Dashboard', apiBase: 'https://server2.sudoyantra.com' };
+    return { filterMacs: CARBANTIS_ROBOTS, extraMacs, queryParams: '?CARBANTIS=1', title: 'Robot Dashboard', apiBase: 'https://server2.sudoyantra.com', features: makeFeatures() };
   }
   if (selection === 'quant1') {
-    return { filterMacs: QUANT1_ROBOTS, extraMacs, queryParams: '?QUANT1=1', title: 'Quant1 Setup', apiBase: 'https://server2.sudoyantra.com' };
+    return { filterMacs: QUANT1_ROBOTS, extraMacs, queryParams: '?QUANT1=1', title: 'Quant1 Setup', apiBase: 'https://server2.sudoyantra.com', features: makeFeatures() };
   }
   if (selection === 'testing') {
-    return { filterMacs: TESTING_ROBOTS, extraMacs, queryParams: '?HPREG=1', title: 'Testing Setup', apiBase: 'https://server2.sudoyantra.com' };
+    return { filterMacs: TESTING_ROBOTS, extraMacs, queryParams: '?HPREG=1', title: 'Testing Setup', apiBase: 'https://server2.sudoyantra.com', features: makeFeatures() };
   }
-  return { filterMacs: [], extraMacs, queryParams: '', title: 'Robot Dashboard', apiBase: selection };
+  return { filterMacs: [], extraMacs, queryParams: '', title: 'Robot Dashboard', apiBase: selection, features: makeFeatures() };
 }
 
 export function getDomainConfig(selection) {

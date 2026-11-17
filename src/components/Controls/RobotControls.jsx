@@ -9,7 +9,7 @@ const DIRS = [
 
 const REPEAT_MS = 250
 
-export default function RobotControls({ onCommand, onStop, onOta, onRunConstantly, onStopConstantly, runConstantly, feedback, activeCmd }) {
+export default function RobotControls({ onCommand, onStop, onOta, onRunConstantly, onStopConstantly, runConstantly, feedback, activeCmd, features = {} }) {
   const [held, setHeld] = useState(null)
   const repeatRef = useRef(null)
 
@@ -28,10 +28,12 @@ export default function RobotControls({ onCommand, onStop, onOta, onRunConstantl
 
   return (
     <div className="flex flex-wrap gap-2 items-center pb-3">
-      <button onClick={onStop} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-error text-error hover:bg-error-light transition-colors min-h-11">
-        Stop
-      </button>
-      {runConstantly ? (
+      {features.stop !== false && (
+        <button onClick={onStop} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-error text-error hover:bg-error-light transition-colors min-h-11">
+          Stop
+        </button>
+      )}
+      {features.runConstantly !== false && (runConstantly ? (
         <button onClick={onStopConstantly} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-error bg-error text-white hover:bg-error-light transition-colors min-h-11 animate-pulse">
           Stop Run Constantly
         </button>
@@ -39,44 +41,52 @@ export default function RobotControls({ onCommand, onStop, onOta, onRunConstantl
         <button onClick={onRunConstantly} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-wifi text-wifi hover:bg-wifi-light transition-colors min-h-11">
           Run Constantly
         </button>
+      ))}
+      {features.goForward !== false && (
+        <button onClick={() => onCommand('go_forward')} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-wifi text-wifi hover:bg-wifi-light transition-colors min-h-11">
+          Go Forward
+        </button>
       )}
-      <button onClick={() => onCommand('go_forward')} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-wifi text-wifi hover:bg-wifi-light transition-colors min-h-11">
-        Go Forward
-      </button>
-      <button onClick={() => onCommand('go_backward')} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-wifi text-wifi hover:bg-wifi-light transition-colors min-h-11">
-        Go Backward
-      </button>
-      <button onClick={onOta} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-warning text-warning hover:bg-warning-light transition-colors min-h-11">
-        OTA
-      </button>
+      {features.goBackward !== false && (
+        <button onClick={() => onCommand('go_backward')} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-wifi text-wifi hover:bg-wifi-light transition-colors min-h-11">
+          Go Backward
+        </button>
+      )}
+      {features.ota !== false && (
+        <button onClick={onOta} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-warning text-warning hover:bg-warning-light transition-colors min-h-11">
+          OTA
+        </button>
+      )}
 
       {/* WASD Grid */}
-      <div className="grid grid-cols-3 gap-1 w-56 mt-2 select-none" style={{ WebkitTouchCallout: 'none' }}>
-        {DIRS.map((d) => {
-          const pressed = held === d.cmd || activeCmd === d.cmd
-          return (
-            <button
-              key={d.cmd}
-              onPointerDown={(e) => { e.preventDefault(); press(d.cmd) }}
-              onPointerUp={release}
-              onPointerLeave={release}
-              onPointerCancel={release}
-              onContextMenu={(e) => e.preventDefault()}
-              className={`${d.grid} flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 min-h-[52px] rounded-lg border transition-all duration-100 select-none touch-none [-webkit-touch-callout:none] ${
-                pressed
-                  ? 'bg-blue-500 text-white border-blue-600 shadow-inner scale-95'
-                  : 'border-blue-500 text-blue-500 bg-white hover:bg-blue-50'
-              }`}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className={`w-4 h-4 ${pressed ? 'animate-pulse' : ''}`}>
-                {d.icon}
-              </svg>
-              <span className="text-[10px] leading-none font-semibold">{d.label}</span>
-              <span className={`text-[9px] leading-none font-mono font-bold px-1 rounded ${pressed ? 'bg-white/20' : 'bg-blue-50'}`}>{d.kbd}</span>
-            </button>
-          )
-        })}
-      </div>
+      {features.wasd !== false && (
+        <div className="grid grid-cols-3 gap-1 w-56 mt-2 select-none" style={{ WebkitTouchCallout: 'none' }}>
+          {DIRS.map((d) => {
+            const pressed = held === d.cmd || activeCmd === d.cmd
+            return (
+              <button
+                key={d.cmd}
+                onPointerDown={(e) => { e.preventDefault(); press(d.cmd) }}
+                onPointerUp={release}
+                onPointerLeave={release}
+                onPointerCancel={release}
+                onContextMenu={(e) => e.preventDefault()}
+                className={`${d.grid} flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 min-h-[52px] rounded-lg border transition-all duration-100 select-none touch-none [-webkit-touch-callout:none] ${
+                  pressed
+                    ? 'bg-blue-500 text-white border-blue-600 shadow-inner scale-95'
+                    : 'border-blue-500 text-blue-500 bg-white hover:bg-blue-50'
+                }`}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className={`w-4 h-4 ${pressed ? 'animate-pulse' : ''}`}>
+                  {d.icon}
+                </svg>
+                <span className="text-[10px] leading-none font-semibold">{d.label}</span>
+                <span className={`text-[9px] leading-none font-mono font-bold px-1 rounded ${pressed ? 'bg-white/20' : 'bg-blue-50'}`}>{d.kbd}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       {feedback && (
         <span className={`w-full text-xs px-3 py-2 rounded-md
