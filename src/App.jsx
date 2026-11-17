@@ -5,7 +5,6 @@ import {
   fetchWifiMacsList,
   fetchLogs,
   fetchWifiLogs,
-  fetchUdpStatus,
   sendRobotCommand,
   sendRobotStop,
   triggerOta,
@@ -32,7 +31,6 @@ import { PASSCODE_ORG } from './passcode'
 
 const REFRESH_MS = 10000
 const ONLINE_THRESHOLD_MS = 120000
-const UDP_STATUS_INTERVAL = 30000
 const CONSTANT_INTERVAL_MS = 30000
 const NAMES_KEY = 'robot_dashboard_device_names'
 const SESSION_KEY = 'robot_dashboard_session'
@@ -388,58 +386,10 @@ export default function App() {
     else if (selectedWifiMac) loadLogsRef.current(selectedWifiMac, 'wifi')
   }, [selectedRobotMac, selectedWifiMac])
 
-  // Periodic log refresh
-  useEffect(() => {
-    if (!selectedRobotMac && !selectedWifiMac) return
-    const id = setInterval(() => {
-      if (selectedRobotMac) loadLogsRef.current(selectedRobotMac, 'robot')
-      else if (selectedWifiMac) loadLogsRef.current(selectedWifiMac, 'wifi')
-    }, REFRESH_MS)
-    return () => clearInterval(id)
+  const refreshLogs = useCallback(() => {
+    if (selectedRobotMac) loadLogsRef.current(selectedRobotMac, 'robot')
+    else if (selectedWifiMac) loadLogsRef.current(selectedWifiMac, 'wifi')
   }, [selectedRobotMac, selectedWifiMac])
-
-  // UDP status polling for all robots every 30s
-  const robotsRef = useRef(robots)
-  robotsRef.current = robots
-  const hadRobotsRef = useRef(false)
-
-  useEffect(() => {
-    const poll = async () => {
-      const list = robotsRef.current
-      if (!list.length) return
-      const results = await Promise.allSettled(list.map((mac) => fetchUdpStatus(apiBase, mac)))
-      setRobotStatus((prev) => {
-        const now = Date.now()
-        const updated = { ...prev }
-        const lookup = {}
-        for (const mac of list) lookup[mac.toLowerCase()] = mac
-        for (const r of results) {
-          if (r.status === 'fulfilled') {
-            const data = r.value
-            const key = lookup[data.mac.toLowerCase()] || data.mac
-            updated[key] = { ...(updated[key] || {}), online: data.udpReady, lastSeen: now }
-          }
-        }
-        return updated
-      })
-    }
-    const id = setInterval(poll, UDP_STATUS_INTERVAL)
-    return () => clearInterval(id)
-  }, [apiBase])
-
-  useEffect(() => {
-    if (robots.length && !hadRobotsRef.current) {
-      hadRobotsRef.current = true
-      robotsRef.current.forEach((mac) => fetchUdpStatus(apiBase, mac).then((data) => {
-        setRobotStatus((prev) => {
-          const lookup = {}
-          for (const m of robotsRef.current) lookup[m.toLowerCase()] = m
-          const key = lookup[data.mac.toLowerCase()] || data.mac
-          return { ...prev, [key]: { ...(prev[key] || {}), online: data.udpReady, lastSeen: Date.now() } }
-        })
-      }).catch(() => {}))
-    }
-  }, [robots, apiBase])
 
   // Camera refresh
   useEffect(() => {
@@ -776,7 +726,7 @@ export default function App() {
               {selectedRobotMac && <TelemetryPanel data={telemetry} lowLimit={lowLimit} />}
 
               <div className="flex-1 min-h-0 flex gap-3">
-                <LogsPanel logs={logs} loading={loading} error={error} />
+                <LogsPanel key={selectedMac} logs={logs} loading={loading} error={error} onRefresh={refreshLogs} />
               </div>
             </>
           ) : (

@@ -50,6 +50,7 @@ const TESTING_ROBOTS = [
   ...HPCL_ROBOTS,
   { mac: 'b0cbd8c898c0', name: 'WHite bRush small robot' },
   { mac: 'b4bfe909efe4', name: '4meter Test rig' },
+  { mac: 'b0cbd8c9c240', name: '2meter WIFI Test' },
 ];
 
 function getConfig(selection) {
@@ -166,19 +167,6 @@ export async function fetchWifiLogs(apiBase, mac) {
   if (!res.ok) throw new Error('Wi‑Fi logs: ' + res.status);
   if (isLogNotFound(text)) return { logs: [] };
   return parseJsonOrText(text);
-}
-
-export async function fetchUdpStatus(apiBase, mac) {
-  const url = apiBase + '/udp/status/' + encodeURIComponent(mac);
-  const res = await fetchWithTimeout(url);
-  const text = await res.text();
-  if (!res.ok) throw new Error('UDP status ' + res.status);
-  try {
-    const data = JSON.parse(text);
-    return { mac: data.mac, udpReady: !!data.udp_ready, otaPending: !!data.ota_pending };
-  } catch {
-    return { mac: mac.toLowerCase(), udpReady: false, otaPending: false };
-  }
 }
 
 export async function sendRobotCommand(apiBase, mac, command) {
