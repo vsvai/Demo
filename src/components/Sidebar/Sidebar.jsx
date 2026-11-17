@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
 import logo from '../../assets/sudoyantra-logo.png'
 
 function ChevronLeftIcon() {
@@ -54,8 +55,20 @@ function RobotsIcon() {
   )
 }
 
-function SidebarDeviceItem({ mac, label, online, active, pinned, onSelect, onRename, onTogglePin }) {
+function QrCodeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20h1" />
+    </svg>
+  )
+}
+
+function SidebarDeviceItem({ mac, label, online, active, pinned, shareUrl, onSelect, onRename, onTogglePin }) {
   const [editing, setEditing] = useState(false)
+  const [showQr, setShowQr] = useState(false)
   const [draft, setDraft] = useState(label)
   const inputRef = useRef(null)
 
@@ -87,49 +100,74 @@ function SidebarDeviceItem({ mac, label, online, active, pinned, onSelect, onRen
     onTogglePin()
   }
 
+  const handleQr = (e) => {
+    e.stopPropagation()
+    setShowQr((v) => !v)
+  }
+
   return (
-    <div
-      onClick={onSelect}
-      onDoubleClick={handleDoubleClick}
-      title="Double-click to rename"
-      className={`w-full flex items-center gap-2.5 px-4 py-2.5 cursor-pointer transition-colors border-l-3
-        ${active ? 'bg-accent-light border-l-accent' : 'border-l-transparent hover:bg-gray-50'}`}
-    >
-      <span className={`w-2 h-2 rounded-full shrink-0 ${online ? 'bg-accent shadow-[0_0_6px_var(--color-accent)]' : 'bg-offline'}`} />
-      {editing ? (
-        <input
-          ref={inputRef}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={handleKeyDown}
-          onClick={(e) => e.stopPropagation()}
-          className="font-mono text-sm font-medium bg-white border border-accent rounded px-1.5 py-0.5 flex-1 outline-none"
-        />
-      ) : (
-        <span className="flex-1 min-w-0">
-          <span className="block font-mono text-sm font-medium truncate">{label}</span>
-          <span className="block font-mono text-[10px] text-text-muted truncate">{mac}</span>
-        </span>
+    <>
+      <div
+        onClick={onSelect}
+        onDoubleClick={handleDoubleClick}
+        title="Double-click to rename"
+        className={`w-full flex items-center gap-2.5 px-4 py-2.5 cursor-pointer transition-colors border-l-3
+          ${active ? 'bg-accent-light border-l-accent' : 'border-l-transparent hover:bg-gray-50'}`}
+      >
+        <span className={`w-2 h-2 rounded-full shrink-0 ${online ? 'bg-accent shadow-[0_0_6px_var(--color-accent)]' : 'bg-offline'}`} />
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={handleKeyDown}
+            onClick={(e) => e.stopPropagation()}
+            className="font-mono text-sm font-medium bg-white border border-accent rounded px-1.5 py-0.5 flex-1 outline-none"
+          />
+        ) : (
+          <span className="flex-1 min-w-0">
+            <span className="block font-mono text-sm font-medium truncate">{label}</span>
+            <span className="block font-mono text-[10px] text-text-muted truncate">{mac}</span>
+          </span>
+        )}
+        {online && !editing && !active && <span className="text-[10px] font-bold text-accent shrink-0">LIVE</span>}
+        {!editing && (
+          <>
+            <button
+              onClick={handleQr}
+              title={showQr ? 'Hide QR code' : 'Show QR code'}
+              className={`shrink-0 p-1 rounded transition-colors ${showQr ? 'text-accent' : 'text-gray-300 hover:text-gray-500'}`}
+            >
+              <QrCodeIcon />
+            </button>
+            <button
+              onClick={handlePin}
+              title={pinned ? 'Unpin' : 'Pin to top'}
+              className={`shrink-0 p-1 rounded transition-colors ${pinned ? 'text-accent hover:text-accent-hover' : 'text-gray-300 hover:text-gray-500'}`}
+            >
+              <PinIcon pinned={pinned} />
+            </button>
+          </>
+        )}
+      </div>
+      {showQr && !editing && (
+        <div onClick={(e) => e.stopPropagation()} className="px-4 pb-3 pt-1 bg-white border-l-3 border-l-border">
+          <div className="flex justify-center bg-white p-2 rounded-lg border border-border">
+            <QRCodeSVG value={shareUrl} size={132} level="M" includeMargin />
+          </div>
+          <div className="mt-2 text-[10px] leading-relaxed font-mono text-text-muted break-all">{shareUrl}</div>
+          <div className="mt-1 text-[10px] text-text-muted">Scan to open this robot's dashboard</div>
+        </div>
       )}
-      {online && !editing && !active && <span className="text-[10px] font-bold text-accent shrink-0">LIVE</span>}
-      {!editing && (
-        <button
-          onClick={handlePin}
-          title={pinned ? 'Unpin' : 'Pin to top'}
-          className={`shrink-0 p-1 rounded transition-colors ${pinned ? 'text-accent hover:text-accent-hover' : 'text-gray-300 hover:text-gray-500'}`}
-        >
-          <PinIcon pinned={pinned} />
-        </button>
-      )}
-    </div>
+    </>
   )
 }
 
 export default function Sidebar({
   collapsed, onToggleCollapse,
   robots, robotStatus, selectedRobotMac, onSelectRobot,
-  getDeviceName, onRename, isPinned, togglePin,
+  getDeviceName, onRename, isPinned, togglePin, getRobotShareUrl,
 }) {
   const [showOthers, setShowOthers] = useState(false)
 
@@ -167,6 +205,7 @@ export default function Sidebar({
         onSelect={() => onSelectRobot(mac)}
         onRename={(newName) => onRename(mac, newName, 'robot')}
         onTogglePin={() => togglePin(mac, 'robot')}
+        shareUrl={getRobotShareUrl(mac)}
       />
     )
   }

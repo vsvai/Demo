@@ -38,8 +38,12 @@ const NAMES_KEY = 'robot_dashboard_device_names'
 const SESSION_KEY = 'robot_dashboard_session'
 const GPS_TRACK_KEY = 'robot_dashboard_gps_tracks'
 
+function getUrlParam(name) {
+  return new URLSearchParams(window.location.search).get(name)
+}
+
 function getInitialDomain() {
-  return localStorage.getItem('selected_domain') || 'https://server2.sudoyantra.com'
+  return getUrlParam('domain') || localStorage.getItem('selected_domain') || 'https://server2.sudoyantra.com'
 }
 
 function loadDeviceNames() {
@@ -115,6 +119,7 @@ export default function App() {
   const [gpsTrack, setGpsTrack] = useState([])
   const [allGpsTracks, setAllGpsTracks] = useState(loadGpsTracks)
   const gpsSeenRef = useRef(new Set())
+  const initialRobotMacRef = useRef(getUrlParam('robot'))
 
   const refreshTimerRef = useRef(null)
   const countdownTimerRef = useRef(null)
@@ -132,9 +137,13 @@ export default function App() {
   const stats = useMemo(() => extractStatsFromLogs(logs), [logs])
 
   const getDeviceName = useCallback((mac, index, type) => {
-    const custom = type === 'wifi' ? deviceNames.wifi[mac] : deviceNames.robots[mac]
-    return custom || getDefaultName(mac, index, type)
-  }, [deviceNames])
+    if (type === 'wifi') return deviceNames.wifi[mac] || getDefaultName(mac, index, type)
+    const custom = deviceNames.robots[mac]
+    if (custom) return custom
+    const defaults = config.robotNames || {}
+    const key = Object.keys(defaults).find((k) => k.toLowerCase() === String(mac).toLowerCase())
+    return (key && defaults[key]) || getDefaultName(mac, index, type)
+  }, [deviceNames, config])
 
   const renameDevice = useCallback((mac, newName, type) => {
     setDeviceNames((prev) => {
@@ -338,10 +347,16 @@ export default function App() {
     saveSession(null)
   }, [resetSelection])
 
-  // Auto-select first robot once list loads
+  useEffect(() => {
+    if (session?.org && session.org.domain !== domain) setDomain(session.org.domain)
+  }, [session, domain])
+
+  // Auto-select first robot once list loads, honoring a shared robot link
   useEffect(() => {
     if (robots.length && !selectedRobotMac && !selectedWifiMac) {
-      setSelectedRobotMac(robots[0])
+      const shared = initialRobotMacRef.current
+      const match = shared && robots.find((mac) => mac.toLowerCase() === shared.toLowerCase())
+      setSelectedRobotMac(match || robots[0])
     }
   }, [robots, selectedRobotMac, selectedWifiMac])
 
@@ -644,6 +659,13 @@ export default function App() {
       ? wifiStatus[selectedWifiMac]?.online
       : null
 
+  const getRobotShareUrl = useCallback((mac) => {
+    const params = new URLSearchParams()
+    params.set('robot', mac)
+    if (domain !== 'https://server2.sudoyantra.com') params.set('domain', domain)
+    return window.location.origin + window.location.pathname + '?' + params.toString()
+  }, [domain])
+
   return (
     <div className="flex flex-col min-h-screen min-h-dvh">
       {!session && <PasscodeGate onUnlock={handleUnlock} />}
@@ -659,6 +681,7 @@ export default function App() {
           onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
           robots={robots} robotStatus={robotStatus} selectedRobotMac={selectedRobotMac} onSelectRobot={selectRobot}
           getDeviceName={getDeviceName} onRename={renameDevice} isPinned={isPinned} togglePin={togglePin}
+          getRobotShareUrl={getRobotShareUrl}
         />
 
         <section className="flex-1 flex flex-col min-w-0 min-h-0 p-3 md:p-4">

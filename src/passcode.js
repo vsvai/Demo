@@ -6,6 +6,7 @@ export const PASSCODE_ORG = {
     { code: '2100', domain: 'hpcl', label: 'HPCL Delhi' },
     { code: '1234', domain: 'carbantis', label: 'Carbantis' },
     { code: '3001', domain: 'quant1', label: 'Quant1' },
+    { code: '1111', domain: 'testing', label: 'Testing' },
   ],
 }
 
