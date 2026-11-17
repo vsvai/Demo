@@ -14,6 +14,7 @@ import {
   fetchRtkPosition,
   fetchRtkStatus,
   parseGpsFromLogs,
+  parseLogLine,
   extractStatsFromLogs,
 } from './api'
 import Header from './components/Header/Header'
@@ -300,8 +301,17 @@ export default function App() {
     try {
       const data = type === 'wifi' ? await fetchWifiLogs(apiBase, mac) : await fetchLogs(apiBase, mac)
       const raw = data.logs ?? data.data ?? (Array.isArray(data) ? data : [])
-      const lines = Array.isArray(raw) ? [...raw].reverse() : (raw ? [raw] : [])
-      setLogs(lines)
+      const lines = Array.isArray(raw) ? [...raw] : (raw ? [raw] : [])
+      const sorted = lines
+        .map((line, index) => ({ line, index, time: parseLogLine(line).date?.getTime() ?? null }))
+        .sort((a, b) => {
+          const at = a.time ?? -Infinity
+          const bt = b.time ?? -Infinity
+          if (at === bt) return a.index - b.index
+          return bt - at
+        })
+        .map((entry) => entry.line)
+      setLogs(sorted)
       const setter = type === 'robot' ? setRobotStatus : setWifiStatus
       setter((prev) => ({ ...prev, [mac]: { ...(prev[mac] || {}), online: true, lastSeen: Date.now() } }))
     } catch (e) {
