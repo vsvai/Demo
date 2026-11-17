@@ -55,7 +55,7 @@ const TESTING_ROBOTS = [
 function getConfig(selection) {
   const extraMacs = ['68fe71f7e8d4']
   if (selection === 'hpcl') {
-    return { filterMacs: HPCL_ROBOTS, extraMacs: [], queryParams: '?HPREG=1', title: 'HPREG Setup', apiBase: 'https://server2.sudoyantra.com', features: makeFeatures({ runConstantly: false }) };
+    return { filterMacs: HPCL_ROBOTS, extraMacs: [], queryParams: '?HPREG=1', title: 'HPREG Setup', apiBase: 'https://server2.sudoyantra.com', features: makeFeatures({ runConstantly: false, camera: false, map: false }) };
   }
   if (selection === 'carbantis') {
     return { filterMacs: CARBANTIS_ROBOTS, extraMacs, queryParams: '?CARBANTIS=1', title: 'Robot Dashboard', apiBase: 'https://server2.sudoyantra.com', features: makeFeatures() };
