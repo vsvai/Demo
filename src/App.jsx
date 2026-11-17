@@ -42,6 +42,10 @@ function getUrlParam(name) {
   return new URLSearchParams(window.location.search).get(name)
 }
 
+function normalizeMac(mac) {
+  return String(mac).trim().toLowerCase()
+}
+
 function getInitialDomain() {
   return getUrlParam('domain') || localStorage.getItem('selected_domain') || 'https://server2.sudoyantra.com'
 }
@@ -239,12 +243,12 @@ export default function App() {
     let hasErr = false
     try {
       const macs = await fetchRobotsList(apiBase)
-      let unique = [...new Set(macs)]
+      let unique = [...new Set(macs.map(normalizeMac).filter(Boolean))]
       if (config.filterMacs.length > 0) {
-        unique = unique.filter((mac) => config.filterMacs.some((f) => f.toLowerCase() === mac.toLowerCase()))
+        unique = unique.filter((mac) => config.filterMacs.some((f) => normalizeMac(f) === mac))
       }
       if (config.extraMacs && config.extraMacs.length > 0) {
-        unique = [...unique, ...config.extraMacs.filter((m) => !unique.some((u) => u.toLowerCase() === m.toLowerCase()))]
+        unique = [...unique, ...config.extraMacs.map(normalizeMac).filter((m) => m && !unique.includes(m))]
       }
       setRobots(unique)
       setRobotStatus((prev) => {
@@ -263,7 +267,7 @@ export default function App() {
     }
     try {
       const w = await fetchWifiMacsList(apiBase)
-      const unique = [...new Set(w)]
+      const unique = [...new Set(w.map(normalizeMac).filter(Boolean))]
       setWifiDevices(unique)
       setWifiStatus((prev) => {
         const now = Date.now()
