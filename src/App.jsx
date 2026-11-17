@@ -120,6 +120,8 @@ export default function App() {
   const [allGpsTracks, setAllGpsTracks] = useState(loadGpsTracks)
   const gpsSeenRef = useRef(new Set())
   const initialRobotMacRef = useRef(getUrlParam('robot'))
+  const initialDomainParamRef = useRef(getUrlParam('domain'))
+  const sharedLinkHandledRef = useRef(false)
 
   const refreshTimerRef = useRef(null)
   const countdownTimerRef = useRef(null)
@@ -348,16 +350,25 @@ export default function App() {
   }, [resetSelection])
 
   useEffect(() => {
-    if (session?.org && session.org.domain !== domain) setDomain(session.org.domain)
+    const requested = initialDomainParamRef.current
+    if (!requested || sharedLinkHandledRef.current || !session) return
+    sharedLinkHandledRef.current = true
+    if (session.guest || session.org?.domain !== requested) {
+      handleLock()
+      setDomain(requested)
+    }
+  }, [session, handleLock])
+
+  useEffect(() => {
+    if (session?.org && !initialDomainParamRef.current && session.org.domain !== domain) setDomain(session.org.domain)
   }, [session, domain])
 
-  // Auto-select first robot once list loads, honoring a shared robot link
+  // Honor a shared robot link even before the robot list finishes loading
   useEffect(() => {
-    if (robots.length && !selectedRobotMac && !selectedWifiMac) {
-      const shared = initialRobotMacRef.current
-      const match = shared && robots.find((mac) => mac.toLowerCase() === shared.toLowerCase())
-      setSelectedRobotMac(match || robots[0])
-    }
+    if (selectedRobotMac || selectedWifiMac) return
+    const shared = initialRobotMacRef.current
+    if (shared) setSelectedRobotMac(shared)
+    else if (robots.length) setSelectedRobotMac(robots[0])
   }, [robots, selectedRobotMac, selectedWifiMac])
 
   // Load logs on selection

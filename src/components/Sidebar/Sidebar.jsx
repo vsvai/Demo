@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { QRCodeSVG } from 'qrcode.react'
+import { QRCodeCanvas } from 'qrcode.react'
 import logo from '../../assets/sudoyantra-logo.png'
 
 function ChevronLeftIcon() {
@@ -154,10 +154,17 @@ function SidebarDeviceItem({ mac, label, online, active, pinned, shareUrl, onSel
       {showQr && !editing && (
         <div onClick={(e) => e.stopPropagation()} className="px-4 pb-3 pt-1 bg-white border-l-3 border-l-border">
           <div className="flex justify-center bg-white p-2 rounded-lg border border-border">
-            <QRCodeSVG value={shareUrl} size={132} level="M" includeMargin />
+            <QRCodeCanvas value={shareUrl} size={176} level="L" includeMargin fgColor="#000000" bgColor="#FFFFFF" />
           </div>
           <div className="mt-2 text-[10px] leading-relaxed font-mono text-text-muted break-all">{shareUrl}</div>
-          <div className="mt-1 text-[10px] text-text-muted">Scan to open this robot's dashboard</div>
+          <a
+            href={shareUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-1 inline-block text-[11px] font-semibold text-accent hover:text-accent-hover underline"
+          >
+            Open link
+          </a>
         </div>
       )}
     </>

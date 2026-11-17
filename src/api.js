@@ -34,6 +34,7 @@ const QUANT1_ROBOTS = [
 const TESTING_ROBOTS = [
   ...HPCL_ROBOTS,
   { mac: 'b0cbd8c898c0', name: 'WHite bRush small robot' },
+  { mac: 'b4bfe909efe4', name: '4meter Test rig' },
 ];
 
 function getConfig(selection) {
