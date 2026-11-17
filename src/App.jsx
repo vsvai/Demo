@@ -28,6 +28,7 @@ import TelemetryPanel from './components/Telemetry/TelemetryPanel'
 import LogsPanel from './components/Logs/LogsPanel'
 import CameraPanel from './components/Camera/CameraPanel'
 import PasscodeGate from './components/PasscodeGate'
+import { PASSCODE_ORG } from './passcode'
 
 const REFRESH_MS = 10000
 const ONLINE_THRESHOLD_MS = 120000
@@ -742,6 +743,20 @@ export default function App() {
           )}
         </section>
       </main>
+
+      {session?.org?.code === '2023' && (
+        <footer className="border-t border-border bg-panel px-3 md:px-4 py-2">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-text-muted">
+            <span className="font-semibold uppercase tracking-wide">Organizations</span>
+            {PASSCODE_ORG.orgs.map((o) => (
+              <span key={o.code} className="flex items-center gap-1.5">
+                <span>{o.label}</span>
+                <span className="font-mono font-semibold text-accent">{o.code}</span>
+              </span>
+            ))}
+          </div>
+        </footer>
+      )}
     </div>
   )
 }

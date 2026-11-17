@@ -12,20 +12,20 @@ export const FIX_QUALITY = {
 
 export const DOMAINS = [
   { value: 'https://server2.sudoyantra.com', label: 'Server 2 (Default)' },
-  { value: 'hpcl', label: 'HPCL Robot (a4f00f72f340)' },
+  { value: 'hpcl', label: 'HPCL Robot (2805a57027b0)' },
   { value: 'carbantis', label: 'Carbantis' },
   { value: 'quant1', label: 'Quant1 (3076f5b92718)' },
 ];
 
 export const HpclRobots = {
-  a4f00f72f340: 'HPREG Robot 1',
-  b0cbd8c5fdc4: 'HPREG Robot 2',
+  '2805a57027b0': 'Auchandi Robot',
+  'b4bfe90a8a64': 'Qutabgarh Robot',
 };
 
 function getConfig(selection) {
   const extraMacs = ['68fe71f7e8d4']
   if (selection === 'hpcl') {
-    return { filterMacs: ['a4f00f72f340', 'b0cbd8c5fdc4'], extraMacs, queryParams: '?HPREG=1', title: 'HPREG Setup', apiBase: 'https://server2.sudoyantra.com' };
+    return { filterMacs: ['2805a57027b0', 'b4bfe90a8a64'], extraMacs, queryParams: '?HPREG=1', title: 'HPREG Setup', apiBase: 'https://server2.sudoyantra.com' };
   }
   if (selection === 'carbantis') {
     return { filterMacs: ['ECE334197698'], extraMacs, queryParams: '?CARBANTIS=1', title: 'Robot Dashboard', apiBase: 'https://server2.sudoyantra.com' };
