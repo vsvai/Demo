@@ -131,6 +131,7 @@ export default function App() {
   const refreshRef = useRef(null)
   const loadLogsRef = useRef(null)
   const logRefreshTimerRef = useRef(null)
+  const otaLogTimerRef = useRef(null)
   const lastLogRefreshRef = useRef(0)
   const robotCmdRef = useRef(null)
   const activeCmdTimerRef = useRef(null)
@@ -402,7 +403,23 @@ export default function App() {
     }, wait)
   }, [refreshLogs])
 
-  useEffect(() => () => clearTimeout(logRefreshTimerRef.current), [])
+  const scheduleOtaLogRefresh = useCallback(() => {
+    clearTimeout(otaLogTimerRef.current)
+    let attempts = 0
+    const poll = () => {
+      attempts += 1
+      refreshLogs()
+      if (attempts < 6) otaLogTimerRef.current = setTimeout(poll, 5000)
+    }
+    otaLogTimerRef.current = setTimeout(poll, 5000)
+  }, [refreshLogs])
+
+  useEffect(() => () => {
+    clearTimeout(logRefreshTimerRef.current)
+    clearTimeout(otaLogTimerRef.current)
+  }, [])
+
+  useEffect(() => () => clearTimeout(otaLogTimerRef.current), [selectedRobotMac])
 
   // Camera refresh
   useEffect(() => {
@@ -613,8 +630,8 @@ export default function App() {
     } catch (e) {
       handleFeedback(setControlFeedback, feedbackTimerRef, e.message || 'Failed', true)
     }
-    scheduleLogRefresh()
-  }, [selectedRobotMac, apiBase, handleFeedback, scheduleLogRefresh])
+    scheduleOtaLogRefresh()
+  }, [selectedRobotMac, apiBase, handleFeedback, scheduleOtaLogRefresh])
 
   const handleWifiAction = useCallback(async (kind) => {
     if (!selectedWifiMac) return
