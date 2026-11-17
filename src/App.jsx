@@ -22,7 +22,6 @@ import DeviceHeader from './components/DeviceHeader'
 import RobotControls from './components/Controls/RobotControls'
 import MapPanel from './components/Map/MapPanel'
 import WifiControls from './components/Controls/WifiControls'
-import StatsPanel from './components/Stats/StatsPanel'
 import TelemetryPanel from './components/Telemetry/TelemetryPanel'
 import LogsPanel from './components/Logs/LogsPanel'
 import CameraPanel from './components/Camera/CameraPanel'
@@ -726,7 +725,6 @@ export default function App() {
                 <WifiControls timer={wifiTimer} onTimerChange={setWifiTimer} onAction={handleWifiAction} feedback={wifiFeedback} />
               )}
 
-              {selectedRobotMac && <StatsPanel data={stats} />}
               {selectedRobotMac && <TelemetryPanel data={telemetry} lowLimit={lowLimit} />}
 
               <div className="flex-1 min-h-0 flex gap-3">
