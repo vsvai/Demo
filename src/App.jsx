@@ -550,7 +550,8 @@ export default function App() {
     } catch (e) {
       handleFeedback(setControlFeedback, feedbackTimerRef, e.message || 'Failed', true)
     }
-  }, [selectedRobotMac, apiBase, handleFeedback])
+    refreshLogs()
+  }, [selectedRobotMac, apiBase, handleFeedback, refreshLogs])
 
   robotCmdRef.current = handleRobotCommand
 
@@ -572,11 +573,12 @@ export default function App() {
       handleFeedback(setControlFeedback, feedbackTimerRef, e.message || 'Failed', true)
       return
     }
+    refreshLogs()
     runConstantlyRef.current = setInterval(() => {
-      sendRobotCommand(apiBase, selectedRobotMac, 'go_backward').catch(() => {})
+      sendRobotCommand(apiBase, selectedRobotMac, 'go_backward').then(refreshLogs).catch(() => {})
     }, CONSTANT_INTERVAL_MS)
     setRunConstantly(true)
-  }, [selectedRobotMac, apiBase, handleFeedback])
+  }, [selectedRobotMac, apiBase, handleFeedback, refreshLogs])
 
   const handleStop = useCallback(async () => {
     stopConstantly()
@@ -587,7 +589,8 @@ export default function App() {
     } catch (e) {
       handleFeedback(setControlFeedback, feedbackTimerRef, e.message || 'Failed', true)
     }
-  }, [selectedRobotMac, apiBase, handleFeedback, stopConstantly])
+    refreshLogs()
+  }, [selectedRobotMac, apiBase, handleFeedback, stopConstantly, refreshLogs])
 
   const handleOta = useCallback(async () => {
     if (!selectedRobotMac) return
@@ -597,7 +600,8 @@ export default function App() {
     } catch (e) {
       handleFeedback(setControlFeedback, feedbackTimerRef, e.message || 'Failed', true)
     }
-  }, [selectedRobotMac, apiBase, handleFeedback])
+    refreshLogs()
+  }, [selectedRobotMac, apiBase, handleFeedback, refreshLogs])
 
   const handleWifiAction = useCallback(async (kind) => {
     if (!selectedWifiMac) return
