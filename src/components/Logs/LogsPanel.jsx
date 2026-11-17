@@ -38,7 +38,7 @@ export default function LogsPanel({ logs, loading, error, onRefresh }) {
           {loading ? 'Loading…' : 'Fetch Log'}
         </button>
       </div>
-      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-3 font-mono text-xs leading-relaxed flex flex-col">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-3 font-mono text-xs leading-relaxed flex flex-col-reverse">
         {loading && <div className="py-6 text-center text-text-muted">Loading…</div>}
         {!loading && error && <div className="py-6 text-center text-error">{error}</div>}
         {!loading && !error && logs.length === 0 && (
