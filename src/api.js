@@ -12,7 +12,7 @@ export const FIX_QUALITY = {
 
 export const DOMAINS = [
   { value: 'https://server2.sudoyantra.com', label: 'Server 2 (Default)' },
-  { value: 'hpcl', label: 'HPCL Robot (2805a57027b0)' },
+  { value: 'hpcl', label: 'HPCL Robot (a4f00f72f340)' },
   { value: 'carbantis', label: 'Carbantis' },
   { value: 'quant1', label: 'Quant1 (3076f5b92718)' },
   { value: 'testing', label: 'Testing (HPCL Robots)' },
@@ -34,7 +34,7 @@ function makeFeatures(overrides = {}) {
 }
 
 const HPCL_ROBOTS = [
-  { mac: '2805a57027b0', name: 'Auchandi HPREG1' },
+  { mac: 'a4f00f72f340', name: 'Auchandi HPREG1' },
   { mac: 'b4bfe90a8a64', name: 'Qutabgarh HPREG2' },
 ];
 
