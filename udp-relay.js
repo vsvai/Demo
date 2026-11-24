@@ -30,6 +30,23 @@ const EXACT_COMMANDS = new Set([
 const socket = dgram.createSocket('udp4')
 socket.unref()
 
+const RELAY_TOKEN = process.env.RELAY_TOKEN || ''
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
+
+function corsHeaders(req) {
+  const origin = req.headers.origin
+  if (!origin || !ALLOWED_ORIGINS.includes(origin)) return {}
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'content-type, x-relay-token',
+    Vary: 'Origin',
+  }
+}
+
 export function isValidIp(value) {
   const parts = String(value || '').split('.')
   return parts.length === 4 && parts.every((p) => /^\d{1,3}$/.test(p) && Number(p) <= 255)
@@ -90,9 +107,21 @@ export async function handleLocalUdp(req, res) {
   const u = new URL(req.url || '/', 'http://localhost')
   if (u.pathname !== '/local/udp') return false
 
+  const headers = corsHeaders(req)
   const send = (status, text) => {
-    res.writeHead(status, { 'Content-Type': 'text/plain; charset=utf-8' })
+    res.writeHead(status, { 'Content-Type': 'text/plain; charset=utf-8', ...headers })
     res.end(text)
+  }
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, headers)
+    res.end()
+    return true
+  }
+
+  if (RELAY_TOKEN && req.headers['x-relay-token'] !== RELAY_TOKEN) {
+    send(401, 'Unauthorized')
+    return true
   }
 
   if (req.method !== 'POST' && req.method !== 'GET') {

@@ -40,6 +40,7 @@ const SESSION_KEY = 'robot_dashboard_session'
 const GPS_TRACK_KEY = 'robot_dashboard_gps_tracks'
 const CONTROL_MODE_KEY = 'robot_dashboard_control_mode'
 const LOCAL_IPS_KEY = 'robot_dashboard_local_ips'
+const LOCAL_RELAYS_KEY = 'robot_dashboard_local_relays'
 
 const LOCAL_COMMAND_ALIASES = {
   forward: 'START:FORWARD',
@@ -84,6 +85,13 @@ function saveGpsTracks(tracks) {
 function loadLocalIps() {
   try {
     const raw = localStorage.getItem(LOCAL_IPS_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch { return {} }
+}
+
+function loadLocalRelays() {
+  try {
+    const raw = localStorage.getItem(LOCAL_RELAYS_KEY)
     return raw ? JSON.parse(raw) : {}
   } catch { return {} }
 }
@@ -146,11 +154,13 @@ export default function App() {
   const [rtkStatus, setRtkStatus] = useState(null)
   const [controlMode, setControlMode] = useState(loadControlMode)
   const [localIps, setLocalIps] = useState(loadLocalIps)
+  const [localRelays, setLocalRelays] = useState(loadLocalRelays)
   const [gpsTrack, setGpsTrack] = useState([])
   const [allGpsTracks, setAllGpsTracks] = useState(loadGpsTracks)
   const gpsSeenRef = useRef(new Set())
   const initialRobotMacRef = useRef(getUrlParam('robot'))
   const initialDomainParamRef = useRef(getUrlParam('domain'))
+  const initialRelayRef = useRef(getUrlParam('relay') || '')
   const sharedLinkHandledRef = useRef(false)
 
   const refreshTimerRef = useRef(null)
@@ -174,12 +184,22 @@ export default function App() {
   const localMode = controlMode === 'local'
   const detectedIp = useMemo(() => parseRobotIpFromLogs(logs), [logs])
   const robotIp = selectedRobotMac ? (localIps[selectedRobotMac] || detectedIp || '') : ''
+  const relayBase = selectedRobotMac ? (localRelays[selectedRobotMac] || initialRelayRef.current || '') : ''
 
   const setLocalIp = useCallback((ip) => {
     if (!selectedRobotMac) return
     setLocalIps((prev) => {
       const updated = { ...prev, [selectedRobotMac]: ip }
       try { localStorage.setItem(LOCAL_IPS_KEY, JSON.stringify(updated)) } catch {}
+      return updated
+    })
+  }, [selectedRobotMac])
+
+  const setLocalRelay = useCallback((relay) => {
+    if (!selectedRobotMac) return
+    setLocalRelays((prev) => {
+      const updated = { ...prev, [selectedRobotMac]: relay }
+      try { localStorage.setItem(LOCAL_RELAYS_KEY, JSON.stringify(updated)) } catch {}
       return updated
     })
   }, [selectedRobotMac])
@@ -631,10 +651,10 @@ export default function App() {
   const dispatchCommand = useCallback(async (command) => {
     if (localMode) {
       if (!robotIp) throw new Error('Enter robot IP for local control')
-      return await sendLocalCommand(robotIp, LOCAL_COMMAND_ALIASES[command] || command)
+      return await sendLocalCommand(relayBase, robotIp, LOCAL_COMMAND_ALIASES[command] || command)
     }
     return await sendRobotCommand(apiBase, selectedRobotMac, command)
-  }, [localMode, robotIp, apiBase, selectedRobotMac])
+  }, [localMode, relayBase, robotIp, apiBase, selectedRobotMac])
 
   const handleRobotCommand = useCallback(async (command) => {
     if (!selectedRobotMac) return
@@ -764,6 +784,8 @@ export default function App() {
               detectedIp={detectedIp}
               onChange={setLocalIp}
               onUseDetected={setLocalIp}
+              relay={relayBase}
+              onRelayChange={setLocalRelay}
             />
           )}
 

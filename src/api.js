@@ -177,17 +177,19 @@ export async function sendRobotCommand(apiBase, mac, command) {
   return text.trim() || 'OK';
 }
 
-export async function sendLocalCommand(ip, command) {
+export async function sendLocalCommand(relayBase, ip, command) {
   const ctrl = new AbortController()
   const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS)
   try {
-    const url = '/local/udp?ip=' + encodeURIComponent(ip) + '&cmd=' + encodeURIComponent(command)
+    const base = String(relayBase || '').replace(/\/+$/, '')
+    const url = base + '/local/udp?ip=' + encodeURIComponent(ip) + '&cmd=' + encodeURIComponent(command)
     const res = await fetch(url, { method: 'POST', signal: ctrl.signal })
     const text = await res.text()
+    if (res.status === 401) throw new Error('Relay rejected the request — check the Worker token')
     if (!res.ok) throw new Error(text.trim() || 'Local UDP ' + res.status)
     return text.trim() || 'OK'
   } catch (e) {
-    if (e instanceof TypeError) throw new Error('Local UDP relay unavailable — serve the dashboard locally on this LAN')
+    if (e instanceof TypeError) throw new Error('Local UDP relay unreachable — check the relay URL or run the gateway on this LAN')
     throw e
   } finally {
     clearTimeout(t)

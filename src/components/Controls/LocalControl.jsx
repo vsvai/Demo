@@ -1,4 +1,4 @@
-export default function LocalControl({ ip, detectedIp, onChange, onUseDetected }) {
+export default function LocalControl({ ip, detectedIp, onChange, onUseDetected, relay, onRelayChange }) {
   return (
     <div className="flex flex-wrap items-center gap-2 px-3 py-2 mb-3 bg-wifi-light border border-wifi/30 rounded-lg">
       <span className="inline-flex items-center gap-1.5 text-xs font-bold text-wifi uppercase tracking-wide">
@@ -23,6 +23,15 @@ export default function LocalControl({ ip, detectedIp, onChange, onUseDetected }
           Use log IP ({detectedIp})
         </button>
       )}
+      <label htmlFor="local-relay" className="text-xs font-semibold text-text">Relay</label>
+      <input
+        id="local-relay"
+        value={relay}
+        onChange={(e) => onRelayChange(e.target.value.trim())}
+        placeholder="same site (production)"
+        spellCheck={false}
+        className="px-2 py-1 text-xs font-mono border border-border rounded-md bg-white outline-none focus:border-wifi w-52"
+      />
       <span className="text-[11px] text-text-muted">Port 8888 · trusted LAN only</span>
     </div>
   )
