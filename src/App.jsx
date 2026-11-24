@@ -9,7 +9,6 @@ import {
   sendRobotStop,
   sendLocalCommand,
   parseRobotIpFromLogs,
-  isValidIp,
   triggerOta,
   sendWifiAction,
   fetchTelemetry,
@@ -42,7 +41,6 @@ const GPS_TRACK_KEY = 'robot_dashboard_gps_tracks'
 const CONTROL_MODE_KEY = 'robot_dashboard_control_mode'
 const LOCAL_IPS_KEY = 'robot_dashboard_local_ips'
 const LOCAL_RELAYS_KEY = 'robot_dashboard_local_relays'
-const TIMED_MOVE_MS = 1000
 
 const LOCAL_COMMAND_ALIASES = {
   forward: 'START:FORWARD',
@@ -185,23 +183,17 @@ export default function App() {
   const stats = useMemo(() => extractStatsFromLogs(logs), [logs])
   const localMode = controlMode === 'local'
   const detectedIp = useMemo(() => parseRobotIpFromLogs(logs), [logs])
-  const savedRobotIp = selectedRobotMac ? localIps[selectedRobotMac] : ''
-  const robotIp = isValidIp(savedRobotIp) ? savedRobotIp : (selectedRobotMac ? (detectedIp || '') : '')
+  const robotIp = selectedRobotMac ? (localIps[selectedRobotMac] || detectedIp || '') : ''
   const relayBase = selectedRobotMac ? (localRelays[selectedRobotMac] || initialRelayRef.current || '') : ''
 
   const setLocalIp = useCallback((ip) => {
-    if (!selectedRobotMac || !isValidIp(ip)) return
+    if (!selectedRobotMac) return
     setLocalIps((prev) => {
-      if (prev[selectedRobotMac] === ip) return prev
       const updated = { ...prev, [selectedRobotMac]: ip }
       try { localStorage.setItem(LOCAL_IPS_KEY, JSON.stringify(updated)) } catch {}
       return updated
     })
   }, [selectedRobotMac])
-
-  useEffect(() => {
-    if (detectedIp && selectedRobotMac && !isValidIp(savedRobotIp)) setLocalIp(detectedIp)
-  }, [detectedIp, selectedRobotMac, savedRobotIp, setLocalIp])
 
   const setLocalRelay = useCallback((relay) => {
     if (!selectedRobotMac) return
@@ -675,12 +667,6 @@ export default function App() {
     scheduleLogRefresh()
   }, [selectedRobotMac, dispatchCommand, handleFeedback, scheduleLogRefresh])
 
-  const handleTimedMove = useCallback((direction) => {
-    if (!localMode || !selectedRobotMac) return
-    flashActiveCmd(direction)
-    handleRobotCommand(`MOVE:${direction}:${TIMED_MOVE_MS}`)
-  }, [localMode, selectedRobotMac, flashActiveCmd, handleRobotCommand])
-
   robotCmdRef.current = handleRobotCommand
 
   const stopConstantly = useCallback(() => {
@@ -852,7 +838,6 @@ export default function App() {
               {selectedRobotMac && (
                 <RobotControls
                   onCommand={(cmd) => { handleRobotCommand(cmd); flashActiveCmd(cmd) }}
-                  onTimedMove={localMode ? handleTimedMove : null}
                   onStop={handleStop}
                   onOta={handleOta}
                   onRunConstantly={handleRunConstantly}

@@ -178,13 +178,10 @@ export async function sendRobotCommand(apiBase, mac, command) {
 }
 
 export async function sendLocalCommand(relayBase, ip, command) {
-  const base = String(relayBase || '')
-    .trim()
-    .replace(/\/+$/, '')
-    .replace(/\/local\/udp$/, '')
   const ctrl = new AbortController()
   const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS)
   try {
+    const base = String(relayBase || '').replace(/\/+$/, '')
     const url = base + '/local/udp?ip=' + encodeURIComponent(ip) + '&cmd=' + encodeURIComponent(command)
     const res = await fetch(url, { method: 'POST', signal: ctrl.signal })
     const text = await res.text()
@@ -192,12 +189,7 @@ export async function sendLocalCommand(relayBase, ip, command) {
     if (!res.ok) throw new Error(text.trim() || 'Local UDP ' + res.status)
     return text.trim() || 'OK'
   } catch (e) {
-    if (e instanceof TypeError) {
-      if (window.location.protocol === 'https:' && /^http:\/\//.test(base)) {
-        throw new Error('HTTPS page cannot call an http:// relay — leave Relay blank for the Worker or use an HTTPS tunnel URL')
-      }
-      throw new Error('Local UDP relay unreachable — check the relay URL or run the gateway on this LAN')
-    }
+    if (e instanceof TypeError) throw new Error('Local UDP relay unreachable — check the relay URL or run the gateway on this LAN')
     throw e
   } finally {
     clearTimeout(t)
@@ -210,11 +202,6 @@ export async function sendRobotStop(apiBase, mac) {
   const text = await res.text()
   if (!res.ok) throw new Error(res.status + ' ' + res.statusText)
   return text.trim() || 'OK'
-}
-
-export function isValidIp(value) {
-  const parts = String(value || '').trim().split('.')
-  return parts.length === 4 && parts.every((p) => /^\d{1,3}$/.test(p) && Number(p) <= 255)
 }
 
 export function parseRobotIpFromLogs(logLines) {

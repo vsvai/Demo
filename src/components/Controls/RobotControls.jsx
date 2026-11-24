@@ -9,7 +9,7 @@ const DIRS = [
 
 const REPEAT_MS = 250
 
-export default function RobotControls({ onCommand, onTimedMove, onStop, onOta, onRunConstantly, onStopConstantly, runConstantly, feedback, activeCmd, features = {} }) {
+export default function RobotControls({ onCommand, onStop, onOta, onRunConstantly, onStopConstantly, runConstantly, feedback, activeCmd, features = {} }) {
   const [held, setHeld] = useState(null)
   const repeatRef = useRef(null)
 
@@ -85,24 +85,6 @@ export default function RobotControls({ onCommand, onTimedMove, onStop, onOta, o
               </button>
             )
           })}
-        </div>
-      )}
-
-      {features.timedMove !== false && onTimedMove && (
-        <div className="w-full flex flex-wrap items-center gap-2 pt-1">
-          <span className="text-[11px] font-bold uppercase tracking-wide text-text-muted">1s Move</span>
-          {DIRS.map((d) => (
-            <button
-              key={d.cmd}
-              onClick={() => onTimedMove(d.cmd)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border border-blue-500 text-blue-500 bg-white hover:bg-blue-50 transition-colors min-h-10"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
-                {d.icon}
-              </svg>
-              {d.label}
-            </button>
-          ))}
         </div>
       )}
 
