@@ -7,6 +7,8 @@ import {
   fetchWifiLogs,
   sendRobotCommand,
   sendRobotStop,
+  sendLocalCommand,
+  parseRobotIpFromLogs,
   triggerOta,
   sendWifiAction,
   fetchTelemetry,
@@ -21,6 +23,7 @@ import Header from './components/Header/Header'
 import Sidebar from './components/Sidebar/Sidebar'
 import DeviceHeader from './components/DeviceHeader'
 import RobotControls from './components/Controls/RobotControls'
+import LocalControl from './components/Controls/LocalControl'
 import MapPanel from './components/Map/MapPanel'
 import WifiControls from './components/Controls/WifiControls'
 import TelemetryPanel from './components/Telemetry/TelemetryPanel'
@@ -35,6 +38,18 @@ const CONSTANT_INTERVAL_MS = 30000
 const NAMES_KEY = 'robot_dashboard_device_names'
 const SESSION_KEY = 'robot_dashboard_session'
 const GPS_TRACK_KEY = 'robot_dashboard_gps_tracks'
+const CONTROL_MODE_KEY = 'robot_dashboard_control_mode'
+const LOCAL_IPS_KEY = 'robot_dashboard_local_ips'
+
+const LOCAL_COMMAND_ALIASES = {
+  forward: 'START:FORWARD',
+  left: 'START:LEFT',
+  backward: 'START:BACKWARD',
+  right: 'START:RIGHT',
+  go_forward: 'GO_FORWARD',
+  go_backward: 'GO_BACKWARD',
+  stop: 'STOP',
+}
 
 function getUrlParam(name) {
   return new URLSearchParams(window.location.search).get(name)
@@ -64,6 +79,17 @@ function loadGpsTracks() {
 
 function saveGpsTracks(tracks) {
   try { localStorage.setItem(GPS_TRACK_KEY, JSON.stringify(tracks)) } catch {}
+}
+
+function loadLocalIps() {
+  try {
+    const raw = localStorage.getItem(LOCAL_IPS_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch { return {} }
+}
+
+function loadControlMode() {
+  try { return localStorage.getItem(CONTROL_MODE_KEY) === 'local' ? 'local' : 'wifi' } catch { return 'wifi' }
 }
 
 function loadSession() {
@@ -118,6 +144,8 @@ export default function App() {
   const [lowLimit, setLowLimit] = useState(null)
   const [rtkPosition, setRtkPosition] = useState(null)
   const [rtkStatus, setRtkStatus] = useState(null)
+  const [controlMode, setControlMode] = useState(loadControlMode)
+  const [localIps, setLocalIps] = useState(loadLocalIps)
   const [gpsTrack, setGpsTrack] = useState([])
   const [allGpsTracks, setAllGpsTracks] = useState(loadGpsTracks)
   const gpsSeenRef = useRef(new Set())
@@ -143,6 +171,24 @@ export default function App() {
   const title = config.title
   const features = config.features
   const stats = useMemo(() => extractStatsFromLogs(logs), [logs])
+  const localMode = controlMode === 'local'
+  const detectedIp = useMemo(() => parseRobotIpFromLogs(logs), [logs])
+  const robotIp = selectedRobotMac ? (localIps[selectedRobotMac] || detectedIp || '') : ''
+
+  const setLocalIp = useCallback((ip) => {
+    if (!selectedRobotMac) return
+    setLocalIps((prev) => {
+      const updated = { ...prev, [selectedRobotMac]: ip }
+      try { localStorage.setItem(LOCAL_IPS_KEY, JSON.stringify(updated)) } catch {}
+      return updated
+    })
+  }, [selectedRobotMac])
+
+  const handleControlModeChange = useCallback((mode) => {
+    setControlMode(mode)
+    try { localStorage.setItem(CONTROL_MODE_KEY, mode) } catch {}
+    setControlFeedback(null)
+  }, [])
 
   const getDeviceName = useCallback((mac, index, type) => {
     if (type === 'wifi') return deviceNames.wifi[mac] || getDefaultName(mac, index, type)
@@ -582,16 +628,24 @@ export default function App() {
     timerRef.current = setTimeout(() => setter(null), 3500)
   }, [])
 
+  const dispatchCommand = useCallback(async (command) => {
+    if (localMode) {
+      if (!robotIp) throw new Error('Enter robot IP for local control')
+      return await sendLocalCommand(robotIp, LOCAL_COMMAND_ALIASES[command] || command)
+    }
+    return await sendRobotCommand(apiBase, selectedRobotMac, command)
+  }, [localMode, robotIp, apiBase, selectedRobotMac])
+
   const handleRobotCommand = useCallback(async (command) => {
     if (!selectedRobotMac) return
     try {
-      const msg = await sendRobotCommand(apiBase, selectedRobotMac, command)
+      const msg = await dispatchCommand(command)
       handleFeedback(setControlFeedback, feedbackTimerRef, msg || 'OK', false)
     } catch (e) {
       handleFeedback(setControlFeedback, feedbackTimerRef, e.message || 'Failed', true)
     }
     scheduleLogRefresh()
-  }, [selectedRobotMac, apiBase, handleFeedback, scheduleLogRefresh])
+  }, [selectedRobotMac, dispatchCommand, handleFeedback, scheduleLogRefresh])
 
   robotCmdRef.current = handleRobotCommand
 
@@ -606,8 +660,9 @@ export default function App() {
   const handleRunConstantly = useCallback(async () => {
     if (!selectedRobotMac) return
     if (runConstantlyRef.current) return
+    const cmd = localMode ? 'GO_BACKWARD' : 'go_backward'
     try {
-      const msg = await sendRobotCommand(apiBase, selectedRobotMac, 'go_backward')
+      const msg = await dispatchCommand(cmd)
       handleFeedback(setControlFeedback, feedbackTimerRef, msg || 'OK', false)
     } catch (e) {
       handleFeedback(setControlFeedback, feedbackTimerRef, e.message || 'Failed', true)
@@ -615,22 +670,22 @@ export default function App() {
     }
     scheduleLogRefresh()
     runConstantlyRef.current = setInterval(() => {
-      sendRobotCommand(apiBase, selectedRobotMac, 'go_backward').then(scheduleLogRefresh).catch(() => {})
+      dispatchCommand(cmd).then(scheduleLogRefresh).catch(() => {})
     }, CONSTANT_INTERVAL_MS)
     setRunConstantly(true)
-  }, [selectedRobotMac, apiBase, handleFeedback, scheduleLogRefresh])
+  }, [selectedRobotMac, dispatchCommand, localMode, handleFeedback, scheduleLogRefresh])
 
   const handleStop = useCallback(async () => {
     stopConstantly()
     if (!selectedRobotMac) return
     try {
-      const msg = await sendRobotStop(apiBase, selectedRobotMac)
+      const msg = localMode ? await dispatchCommand('STOP') : await sendRobotStop(apiBase, selectedRobotMac)
       handleFeedback(setControlFeedback, feedbackTimerRef, msg || 'OK', false)
     } catch (e) {
       handleFeedback(setControlFeedback, feedbackTimerRef, e.message || 'Failed', true)
     }
     scheduleLogRefresh()
-  }, [selectedRobotMac, apiBase, handleFeedback, stopConstantly, scheduleLogRefresh])
+  }, [selectedRobotMac, apiBase, localMode, dispatchCommand, handleFeedback, stopConstantly, scheduleLogRefresh])
 
   const handleOta = useCallback(async () => {
     if (!selectedRobotMac) return
@@ -690,6 +745,7 @@ export default function App() {
         domain={domain} onDomainChange={handleDomainChange} countdown={countdown} title={title}
         onExport={exportNames} onImport={importNames} apiStatus={apiStatus} apiStatusError={apiStatusError}
         domainLocked={!!session} lockLabel={session?.guest ? 'Guest' : session?.org?.label} onLock={handleLock}
+        controlMode={controlMode} onControlModeChange={handleControlModeChange}
       />
 
       <main className="flex flex-1 min-h-0 flex-col md:flex-row">
@@ -702,6 +758,15 @@ export default function App() {
         />
 
         <section className="flex-1 flex flex-col min-w-0 min-h-0 p-3 md:p-4">
+          {localMode && selectedRobotMac && (
+            <LocalControl
+              ip={robotIp}
+              detectedIp={detectedIp}
+              onChange={setLocalIp}
+              onUseDetected={setLocalIp}
+            />
+          )}
+
           {selectedRobotMac && cameraOpen && features?.camera !== false && (
             <div className="flex gap-3 mb-4">
               <CameraPanel
@@ -758,7 +823,7 @@ export default function App() {
                   runConstantly={runConstantly}
                   feedback={controlFeedback}
                   activeCmd={activeCmd}
-                  features={features}
+                  features={{ ...features, ota: features.ota !== false && !localMode }}
                 />
               )}
 

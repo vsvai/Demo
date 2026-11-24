@@ -177,12 +177,38 @@ export async function sendRobotCommand(apiBase, mac, command) {
   return text.trim() || 'OK';
 }
 
+export async function sendLocalCommand(ip, command) {
+  const ctrl = new AbortController()
+  const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS)
+  try {
+    const url = '/local/udp?ip=' + encodeURIComponent(ip) + '&cmd=' + encodeURIComponent(command)
+    const res = await fetch(url, { method: 'POST', signal: ctrl.signal })
+    const text = await res.text()
+    if (!res.ok) throw new Error(text.trim() || 'Local UDP ' + res.status)
+    return text.trim() || 'OK'
+  } catch (e) {
+    if (e instanceof TypeError) throw new Error('Local UDP relay unavailable — serve the dashboard locally on this LAN')
+    throw e
+  } finally {
+    clearTimeout(t)
+  }
+}
+
 export async function sendRobotStop(apiBase, mac) {
-  const url = apiBase + '/udp/start/' + encodeURIComponent(mac) + '/set/stop';
-  const res = await fetchWithTimeout(url);
-  const text = await res.text();
-  if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
-  return text.trim() || 'OK';
+  const url = apiBase + '/udp/start/' + encodeURIComponent(mac) + '/set/stop'
+  const res = await fetchWithTimeout(url)
+  const text = await res.text()
+  if (!res.ok) throw new Error(res.status + ' ' + res.statusText)
+  return text.trim() || 'OK'
+}
+
+export function parseRobotIpFromLogs(logLines) {
+  for (const line of logLines || []) {
+    const text = parseLogLine(line).body
+    const m = text.match(/\bWIFI:\S+\s+.+?\b((?:\d{1,3}\.){3}\d{1,3})\b/i)
+    if (m && m[1].split('.').every((p) => Number(p) <= 255)) return m[1]
+  }
+  return null
 }
 
 export async function triggerOta(apiBase, mac) {

@@ -1,6 +1,6 @@
 import logo from '../../assets/sudoyantra-logo.png'
 
-export default function Header({ domain, onDomainChange, countdown, title, onExport, onImport, apiStatus, apiStatusError, domainLocked, lockLabel, onLock }) {
+export default function Header({ domain, onDomainChange, countdown, title, onExport, onImport, apiStatus, apiStatusError, domainLocked, lockLabel, onLock, controlMode = 'wifi', onControlModeChange }) {
   return (
     <header className="flex items-center justify-between flex-wrap gap-2 px-4 py-2.5 bg-white border-b border-border">
       <div className="flex items-center gap-3 min-w-0">
@@ -15,6 +15,23 @@ export default function Header({ domain, onDomainChange, countdown, title, onExp
         </div>
       </div>
       <div className="flex items-center gap-2 flex-wrap">
+        <div className="inline-flex rounded-md border border-border overflow-hidden" role="group" aria-label="Control mode">
+          {['wifi', 'local'].map((mode) => (
+            <button
+              key={mode}
+              onClick={() => onControlModeChange?.(mode)}
+              aria-pressed={controlMode === mode}
+              title={mode === 'wifi' ? 'Control through the server (WiFi/internet)' : 'Control directly over the LAN via UDP port 8888'}
+              className={`px-2.5 py-1 text-xs font-semibold transition-colors ${
+                controlMode === mode
+                  ? mode === 'local' ? 'bg-wifi text-white border-wifi' : 'bg-accent text-white border-accent'
+                  : 'bg-white text-text-muted hover:bg-gray-50'
+              }`}
+            >
+              {mode === 'wifi' ? 'WiFi' : 'Local'}
+            </button>
+          ))}
+        </div>
         {domainLocked ? (
           <span className="flex items-center gap-2 px-3 py-1 text-sm font-semibold border border-accent rounded-md bg-accent-light text-accent-hover">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">

@@ -1,8 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { handleLocalUdp } from './udp-relay.js'
+
+function localUdpRelay() {
+  const attach = (server) => {
+    server.middlewares.use((req, res, next) => {
+      if (!req.url?.startsWith('/local/')) return next()
+      handleLocalUdp(req, res).then((handled) => { if (!handled) next() })
+    })
+  }
+  return { name: 'local-udp-relay', configureServer: attach, configurePreviewServer: attach }
+}
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), localUdpRelay()],
   base: '/Demo/',
   server: {
     proxy: {
